@@ -1,0 +1,21 @@
+{
+  "name": "video_streaming",
+  "description": "Mimics video streaming traffic (YouTube/Netflix pattern)",
+  "packet_sizes": {
+    "buckets": [
+      {"min": 40, "max": 100, "weight": 5},
+      {"min": 100, "max": 300, "weight": 5},
+      {"min": 1200, "max": 1460, "weight": 70},
+      {"min": 1460, "max": 8192, "weight": 15},
+      {"min": 8192, "max": 16384, "weight": 5}
+    ]
+  },
+  "timing": {
+    "min_delay_ms": 0,
+    "max_delay_ms": 50,
+    "mean_delay_ms": 5,
+    "jitter_ms": 8,
+    "burst_size": 20,
+    "burst_gap_ms": 30
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "http2_browsing",
+  "description": "Mimics HTTP/2 web browsing traffic (Chrome-like pattern)",
+  "packet_sizes": {
+    "buckets": [
+      {"min": 40, "max": 100, "weight": 15},
+      {"min": 100, "max": 300, "weight": 20},
+      {"min": 300, "max": 800, "weight": 25},
+      {"min": 800, "max": 1460, "weight": 30},
+      {"min": 1460, "max": 4096, "weight": 8},
+      {"min": 4096, "max": 16384, "weight": 2}
+    ]
+  },
+  "timing": {
+    "min_delay_ms": 0,
+    "max_delay_ms": 200,
+    "mean_delay_ms": 15,
+    "jitter_ms": 25,
+    "burst_size": 8,
+    "burst_gap_ms": 100
+  }
+}

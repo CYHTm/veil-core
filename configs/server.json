@@ -1,0 +1,7 @@
+{
+  "listen": ":8443",
+  "secret": "CHANGE-ME-to-a-long-random-passphrase",
+  "transport": "raw",
+  "cipher": "chacha20-poly1305",
+  "max_streams": 256
+}

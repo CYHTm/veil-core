@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veil Protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06060a;--s1:#0c0c14;--s2:#111119;--s3:#181824;
+  --b1:#1c1c30;--b2:#282840;
+  --t1:#eeeef4;--t2:#9999b0;--t3:#5c5c72;
+  --ac:#7c5cfc;--ac2:#9b7cff;--acg:rgba(124,92,252,.12);
+  --gn:#34d399;--gng:rgba(52,211,153,.15);
+  --rd:#f87171;--rdg:rgba(248,113,113,.12);
+  --yl:#fbbf24;
+  --r:8px;--r2:12px;--r3:16px;
+}
+body{background:var(--bg);color:var(--t1);font-family:'Inter',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.82em}
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0}
+.topbar .logo{width:30px;height:30px;background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:8px;display:grid;place-items:center;font-size:15px;box-shadow:0 2px 10px var(--acg);flex-shrink:0}
+.topbar .brand{font-size:.85rem;font-weight:600;letter-spacing:-.3px}
+.topbar .brand small{font-size:.6rem;color:var(--t3);margin-left:6px;font-weight:400}
+.topbar .spacer{flex:1}
+.topbar .pill{display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--s2);border:1px solid var(--b1);border-radius:14px}
+.lang-btn{background:none;border:1px solid var(--b1);border-radius:6px;color:var(--t3);font-size:.6rem;padding:3px 8px;cursor:pointer;margin-left:8px;transition:all .2s}
+.lang-btn:hover,.lang-btn.active{border-color:var(--ac);color:var(--ac2)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--rd);box-shadow:0 0 6px var(--rdg);transition:all .4s}
+.dot.on{background:var(--gn);box-shadow:0 0 8px var(--gng);animation:pulse 2.5s infinite}
+.dot.wait{background:var(--yl);animation:pulse .5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pill span{font-size:.68rem;font-weight:500;color:var(--t2)}
+.main{flex:1;display:grid;grid-template-columns:260px 1fr;grid-template-rows:auto 1fr;overflow:hidden}
+.left{grid-row:1/3;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow-y:auto}
+.section{padding:14px}
+.section+.section{border-top:1px solid var(--b1)}
+.section h3{font-size:.58rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.cbtn{width:100%;padding:10px;background:var(--ac);border:none;border-radius:var(--r2);color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.cbtn::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.06) 0%,transparent 50%);pointer-events:none}
+.cbtn:hover{filter:brightness(1.08);box-shadow:0 4px 16px var(--acg)}
+.cbtn:disabled{opacity:.4;cursor:default;filter:none;box-shadow:none}
+.cbtn.off{background:var(--rd)}.cbtn.off:hover{box-shadow:0 4px 16px var(--rdg)}
+.cfg{display:flex;flex-direction:column;gap:5px}
+.cf{display:flex;justify-content:space-between;align-items:center}
+.cf .k{font-size:.65rem;color:var(--t3)}.cf .v{font-size:.65rem;color:var(--t2);font-weight:500}
+.sbtn{width:100%;padding:7px;margin-top:3px;background:transparent;border:1px solid var(--b1);border-radius:var(--r);color:var(--t3);font-size:.68rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
+.sbtn:hover{border-color:var(--b2);color:var(--t2);background:var(--s2)}
+.sbtn.primary{border-color:var(--ac);color:var(--ac2)}.sbtn.primary:hover{background:var(--acg)}
+.right-top{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 18px;border-bottom:1px solid var(--b1)}
+.stat{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:12px;text-align:center}
+.stat b{display:block;font-size:1.2rem;font-weight:700;color:var(--ac);line-height:1.2}
+.stat small{font-size:.55rem;color:var(--t3);text-transform:uppercase;letter-spacing:.6px}
+.right-log{display:flex;flex-direction:column;overflow:hidden}
+.log-header{padding:8px 18px;font-size:.58rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0}
+.log{flex:1;overflow-y:auto;padding:8px 18px;font-family:'JetBrains Mono',monospace;font-size:.65rem;line-height:1.7}
+.log::-webkit-scrollbar{width:3px}.log::-webkit-scrollbar-thumb{background:var(--b1);border-radius:3px}
+.lg{color:var(--t3)}.lg .ts{color:var(--b2);margin-right:6px}.lg.ok{color:var(--gn)}.lg.er{color:var(--rd)}.lg.st{color:var(--ac2)}
+.welcome{grid-column:1/3;grid-row:1/3;display:flex;align-items:center;justify-content:center;padding:40px}
+.welcome.hidden{display:none}
+.wcard{max-width:480px;width:100%;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r3);padding:28px}
+.wcard .wlogo{width:52px;height:52px;margin:0 auto 14px;background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:13px;display:grid;place-items:center;font-size:26px;box-shadow:0 8px 28px var(--acg)}
+.wcard h2{text-align:center;font-size:1.1rem;margin-bottom:4px}
+.wcard .wsub{text-align:center;color:var(--t3);font-size:.72rem;margin-bottom:20px}
+.steps{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.step{display:flex;gap:10px;align-items:flex-start}
+.step .num{width:22px;height:22px;flex-shrink:0;background:var(--acg);border:1px solid var(--ac);border-radius:50%;display:grid;place-items:center;font-size:.6rem;font-weight:700;color:var(--ac2)}
+.step .stxt h4{font-size:.72rem;font-weight:600;margin-bottom:1px}
+.step .stxt p{font-size:.65rem;color:var(--t3);line-height:1.4}
+.step .stxt code{display:inline-block;margin-top:3px;padding:2px 6px;background:var(--bg);border:1px solid var(--b1);border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--ac2);word-break:break-all}
+.wbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wbtn{padding:10px;border:none;border-radius:var(--r2);font-size:.75rem;font-weight:600;cursor:pointer;transition:all .2s}
+.wbtn.p{background:var(--ac);color:#fff}.wbtn.p:hover{filter:brightness(1.1);box-shadow:0 4px 16px var(--acg)}
+.wbtn.s{background:var(--s3);color:var(--t2);border:1px solid var(--b1)}.wbtn.s:hover{color:var(--t1)}
+.ov{display:none;position:fixed;inset:0;background:rgba(4,4,8,.8);backdrop-filter:blur(6px);z-index:99;align-items:center;justify-content:center;padding:20px}
+.ov.on{display:flex}
+.md{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r3);padding:18px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto;animation:pop .2s ease-out}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.md h3{font-size:.82rem;font-weight:600;margin-bottom:12px}
+.fg{margin-bottom:8px}
+.fg label{display:block;font-size:.58rem;color:var(--t3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:7px 9px;background:var(--bg);border:1px solid var(--b1);border-radius:var(--r);color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:.72rem;outline:none;transition:border .2s;resize:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--ac)}
+.fg select{cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='%235c5c72'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px}
+.fg .hint{font-size:.55rem;color:var(--t3);margin-top:2px}
+.mbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.mbtns button{padding:9px;border:none;border-radius:var(--r);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s}
+.bsv{background:var(--ac);color:#fff}.bsv:hover{filter:brightness(1.1)}
+.bcn{background:var(--s2);color:var(--t3);border:1px solid var(--b1)!important}.bcn:hover{color:var(--t2)}
+.sep{border:none;border-top:1px solid var(--b1);margin:10px 0}
+@media(max-width:700px){.main{grid-template-columns:1fr;grid-template-rows:auto auto 1fr}.left{grid-row:auto;border-right:none;border-bottom:1px solid var(--b1)}.right-top{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">🛡</div>
+  <div class="brand">Veil<small>Protocol</small></div>
+  <div class="spacer"></div>
+  <div class="pill"><div class="dot" id="dot"></div><span id="stxt">—</span></div>
+  <button class="lang-btn active" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('ru')">RU</button>
+</div>
+
+<div class="main" id="mainWrap">
+<div class="welcome" id="welcome">
+  <div class="wcard">
+    <div class="wlogo">🛡</div>
+    <h2 data-i="w_title">Welcome to Veil</h2>
+    <p class="wsub" data-i="w_sub">Stealth protocol for free internet</p>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><div class="stxt">
+        <h4 data-i="w_s1h">Get a link</h4>
+        <p data-i="w_s1p">Ask a Veil server owner for a connection link:</p>
+        <code>veil://secret@server:443?transport=tls</code>
+      </div></div>
+      <div class="step"><div class="num">2</div><div class="stxt">
+        <h4 data-i="w_s2h">Paste the link</h4>
+        <p data-i="w_s2p">Click "Paste link" and paste it. All settings apply automatically.</p>
+      </div></div>
+      <div class="step"><div class="num">3</div><div class="stxt">
+        <h4 data-i="w_s3h">Connect</h4>
+        <p data-i="w_s3p">Click "Connect". All traffic goes through an encrypted tunnel disguised as normal HTTPS.</p>
+      </div></div>
+    </div>
+    <div class="wbtns">
+      <button class="wbtn p" onclick="oImp()" data-i="w_paste">📋 Paste link</button>
+      <button class="wbtn s" onclick="hideWelcome()" data-i="w_manual">⚙ Manual setup</button>
+    </div>
+  </div>
+</div>
+
+<div class="left" id="leftPanel" style="display:none">
+  <div class="section">
+    <h3 data-i="l_conn">Connection</h3>
+    <button class="cbtn" id="cbtn" onclick="go()" data-i="btn_connect">Connect</button>
+  </div>
+  <div class="section">
+    <h3 data-i="l_config">Configuration</h3>
+    <div class="cfg">
+      <div class="cf"><span class="k" data-i="c_server">Server</span><span class="v mono" id="iSrv">—</span></div>
+      <div class="cf"><span class="k" data-i="c_transport">Transport</span><span class="v" id="iTr">—</span></div>
+      <div class="cf"><span class="k" data-i="c_morph">Morphing</span><span class="v" id="iMo">—</span></div>
+      <div class="cf"><span class="k" data-i="c_cipher">Cipher</span><span class="v" id="iCi">—</span></div>
+      <div class="cf"><span class="k" data-i="c_proxy">Proxy</span><span class="v mono" id="iSo">—</span></div>
+    </div>
+  </div>
+  <div class="section">
+    <h3 data-i="l_actions">Actions</h3>
+    <button class="sbtn primary" onclick="oImp()" data-i="btn_paste">📋 Paste link</button>
+    <button class="sbtn" onclick="oSet()" data-i="btn_settings">⚙ Settings</button>
+  </div>
+</div>
+
+<div class="right-top" id="rightTop" style="display:none">
+  <div class="stat"><b id="bw">0 B</b><small data-i="st_traffic">Traffic</small></div>
+  <div class="stat"><b id="cn">0</b><small data-i="st_streams">Streams</small></div>
+  <div class="stat"><b id="up">0:00</b><small data-i="st_uptime">Uptime</small></div>
+  <div class="stat"><b id="morph">—</b><small data-i="st_morph">Morphing</small></div>
+</div>
+
+<div class="right-log" id="rightLog" style="display:none">
+  <div class="log-header" data-i="l_log">Activity Log</div>
+  <div class="log" id="log"></div>
+</div>
+</div>
+
+<div class="ov" id="ovImp"><div class="md">
+  <h3 data-i="imp_title">📋 Import Configuration</h3>
+  <div class="fg">
+    <label data-i="imp_label">Veil Link</label>
+    <textarea id="impLink" rows="3" placeholder="veil://secret@server:port?transport=tls"></textarea>
+    <div class="hint" data-i="imp_hint">Get this link from a server owner. All settings will apply automatically.</div>
+  </div>
+  <div class="mbtns">
+    <button class="bcn" onclick="cImp()" data-i="btn_cancel">Cancel</button>
+    <button class="bsv" onclick="doImp()" data-i="btn_import">Import</button>
+  </div>
+</div></div>
+
+<div class="ov" id="ov"><div class="md">
+  <h3 data-i="set_title">⚙ Settings</h3>
+  <div class="fg"><label data-i="set_server">Server (IP:port)</label><input id="xSrv" placeholder="123.45.67.89:443"></div>
+  <div class="fg"><label data-i="set_secret">Secret key</label><input id="xSec" type="password" placeholder="Shared secret"></div>
+  <div class="fg"><label data-i="set_transport">Transport</label>
+    <select id="xTr"><option value="raw">Raw TCP (test)</option><option value="tls">TLS 1.3 (recommended)</option><option value="wss">WebSocket</option></select></div>
+  <div class="fg"><label data-i="set_morph">Traffic morphing</label>
+    <select id="xMo"><option value="http2_browsing">HTTP/2 — browser</option><option value="video_streaming">Video — YouTube/Netflix</option></select></div>
+  <div class="fg"><label data-i="set_cipher">Encryption</label>
+    <select id="xCi"><option value="chacha20-poly1305">ChaCha20-Poly1305</option><option value="aes-256-gcm">AES-256-GCM</option></select></div>
+  <div class="fg"><label data-i="set_sni">SNI (domain mask)</label><input id="xSni" placeholder="cdn.example.com">
+    <div class="hint" data-i="set_sni_hint">DPI will see this domain instead of the real server address</div></div>
+  <div class="fg"><label data-i="set_socks">Local SOCKS5 proxy</label><input id="xSo" placeholder="127.0.0.1:1080"></div>
+  <hr class="sep">
+  <div class="fg"><label data-i="set_link">Share link</label>
+    <input id="xLink" readonly style="color:var(--ac2);cursor:pointer" onclick="this.select();document.execCommand('copy')">
+    <div class="hint" data-i="set_link_hint">Click to copy, send to friends</div></div>
+  <div class="mbtns">
+    <button class="bcn" onclick="cSet()" data-i="btn_cancel">Cancel</button>
+    <button class="bsv" onclick="sSet()" data-i="btn_save">Save</button>
+  </div>
+</div></div>
+
+<script>
+const I={
+en:{
+  w_title:'Welcome to Veil',w_sub:'Stealth protocol for free internet',
+  w_s1h:'Get a link',w_s1p:'Ask a Veil server owner for a connection link:',
+  w_s2h:'Paste the link',w_s2p:'Click "Paste link" and paste it. All settings apply automatically.',
+  w_s3h:'Connect',w_s3p:'Click "Connect". All traffic goes through an encrypted tunnel disguised as normal HTTPS.',
+  w_paste:'📋 Paste link',w_manual:'⚙ Manual setup',
+  l_conn:'Connection',l_config:'Configuration',l_actions:'Actions',l_log:'Activity Log',
+  c_server:'Server',c_transport:'Transport',c_morph:'Morphing',c_cipher:'Cipher',c_proxy:'Proxy',
+  btn_connect:'Connect',btn_disconnect:'Disconnect',btn_connecting:'Connecting...',
+  btn_paste:'📋 Paste link',btn_settings:'⚙ Settings',btn_cancel:'Cancel',btn_import:'Import',btn_save:'Save',
+  st_traffic:'Traffic',st_streams:'Streams',st_uptime:'Uptime',st_morph:'Morphing',
+  imp_title:'📋 Import Configuration',imp_label:'Veil Link',imp_hint:'Get this link from a server owner.',
+  set_title:'⚙ Settings',set_server:'Server (IP:port)',set_secret:'Secret key',
+  set_transport:'Transport',set_morph:'Traffic morphing',set_cipher:'Encryption',
+  set_sni:'SNI (domain mask)',set_sni_hint:'DPI will see this domain instead of the real server',
+  set_socks:'Local SOCKS5 proxy',set_link:'Share link',set_link_hint:'Click to copy, send to friends',
+  s_off:'Disconnected',s_on:'Connected',
+  log_ok:'Connected!',log_disc:'Disconnected',log_cfg:'Settings saved',log_imp:'Config imported!',
+  log_nosrv:'Set server and secret — paste a link or configure manually',log_err_link:'Paste a link',
+  morph_h:'HTTP/2',morph_v:'Video'
+},
+ru:{
+  w_title:'Добро пожаловать в Veil',w_sub:'Протокол невидимости для свободного интернета',
+  w_s1h:'Получи ссылку',w_s1p:'Попроси у владельца Veil-сервера ссылку подключения:',
+  w_s2h:'Вставь ссылку',w_s2p:'Нажми «Вставить ссылку» и вставь её. Все настройки заполнятся автоматически.',
+  w_s3h:'Подключись',w_s3p:'Нажми «Подключиться». Весь трафик пойдёт через зашифрованный туннель, замаскированный под обычный HTTPS.',
+  w_paste:'📋 Вставить ссылку',w_manual:'⚙ Настроить вручную',
+  l_conn:'Подключение',l_config:'Конфигурация',l_actions:'Действия',l_log:'Лог активности',
+  c_server:'Сервер',c_transport:'Транспорт',c_morph:'Маскировка',c_cipher:'Шифр',c_proxy:'Прокси',
+  btn_connect:'Подключиться',btn_disconnect:'Отключиться',btn_connecting:'Подключение...',
+  btn_paste:'📋 Вставить ссылку',btn_settings:'⚙ Настройки',btn_cancel:'Отмена',btn_import:'Импортировать',btn_save:'Сохранить',
+  st_traffic:'Трафик',st_streams:'Потоки',st_uptime:'Время',st_morph:'Маскировка',
+  imp_title:'📋 Импорт конфигурации',imp_label:'Ссылка Veil',imp_hint:'Получи эту ссылку у владельца сервера.',
+  set_title:'⚙ Настройки',set_server:'Сервер (IP:порт)',set_secret:'Секретный ключ',
+  set_transport:'Транспорт',set_morph:'Маскировка трафика',set_cipher:'Шифрование',
+  set_sni:'SNI (имитация домена)',set_sni_hint:'DPI увидит этот домен вместо реального адреса',
+  set_socks:'Локальный SOCKS5 прокси',set_link:'Ссылка для друзей',set_link_hint:'Нажми чтобы скопировать',
+  s_off:'Отключен',s_on:'Подключен',
+  log_ok:'Подключен!',log_disc:'Отключен',log_cfg:'Настройки сохранены',log_imp:'Конфиг импортирован!',
+  log_nosrv:'Укажи сервер и секрет — вставь ссылку или настрой вручную',log_err_link:'Вставь ссылку',
+  morph_h:'HTTP/2',morph_v:'Видео'
+}};
+let L='en';
+function setLang(l){
+  L=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===l.toUpperCase()));
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(I[l][k])el.textContent=I[l][k]});
+  localStorage.setItem('veil_lang',l);
+  const d=$('dot');
+  $('stxt').textContent=d.classList.contains('on')?I[l].s_on:I[l].s_off;
+  const b=$('cbtn');if(b&&!b.disabled)b.textContent=C?I[l].btn_disconnect:I[l].btn_connect;
+}
+
+let W,C=false,startTime=0,uptimeTimer;
+function init(){
+  const saved=localStorage.getItem('veil_lang');if(saved)setLang(saved);else setLang('en');
+  W=new WebSocket('ws://'+location.host+'/ws');
+  W.onmessage=e=>{
+    const m=JSON.parse(e.data);
+    if(m.type==='status')uSt(m);
+    else if(m.type==='stats'){$('bw').textContent=m.bytes;$('cn').textContent=m.conns}
+    else if(m.type==='log')aLog(m.text,m.level);
+    else if(m.type==='config'){lCfg(m);if(m.server&&m.secret)hideWelcome()}
+    else if(m.type==='import_ok'){lCfg(m);cImp();hideWelcome();aLog(I[L].log_imp,'success')}
+    else if(m.type==='import_err')aLog('Error: '+m.text,'error');
+  };
+  W.onopen=()=>W.send(J({action:'get_config'}));
+  W.onclose=()=>setTimeout(init,2e3);
+}
+function $(id){return document.getElementById(id)}
+function J(o){return JSON.stringify(o)}
+function hideWelcome(){$('welcome').style.display='none';$('leftPanel').style.display='';$('rightTop').style.display='';$('rightLog').style.display=''}
+function uSt(m){
+  const d=$('dot'),t=$('stxt'),b=$('cbtn');
+  d.className='dot'+(m.state==='connected'?' on':m.state==='connecting'?' wait':'');
+  if(m.state==='connected'){C=true;t.textContent=I[L].s_on;b.textContent=I[L].btn_disconnect;b.className='cbtn off';b.disabled=false;startTime=Date.now();uptimeTimer=setInterval(updateUptime,1000)}
+  else if(m.state==='connecting'){t.textContent=I[L].btn_connecting;b.textContent=I[L].btn_connecting;b.disabled=true;b.className='cbtn'}
+  else{C=false;t.textContent=I[L].s_off;b.textContent=I[L].btn_connect;b.className='cbtn';b.disabled=false;if(uptimeTimer){clearInterval(uptimeTimer);uptimeTimer=null}$('up').textContent='0:00'}
+}
+function updateUptime(){const s=Math.floor((Date.now()-startTime)/1000),m=Math.floor(s/60),h=Math.floor(m/60);$('up').textContent=h>0?h+':'+String(m%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):m+':'+String(s%60).padStart(2,'0')}
+function aLog(t,l){const a=$('log'),d=document.createElement('div');d.className='lg'+(l==='success'?' ok':l==='error'?' er':l==='stream'?' st':'');const ts=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});d.innerHTML='<span class="ts">'+ts+'</span>'+t;a.appendChild(d);a.scrollTop=9e9;while(a.children.length>200)a.removeChild(a.firstChild)}
+function go(){W.send(J({action:C?'disconnect':'connect'}))}
+function lCfg(c){
+  $('xSrv').value=c.server||'';$('xSec').value=c.secret||'';$('xTr').value=c.transport||'raw';
+  $('xMo').value=c.morph||'http2_browsing';$('xCi').value=c.cipher||'chacha20-poly1305';
+  $('xSni').value=c.sni||'';$('xSo').value=c.socks||'127.0.0.1:1080';
+  $('iSrv').textContent=c.server||'—';
+  $('iTr').textContent=({raw:'Raw TCP',tls:'TLS 1.3',wss:'WebSocket'})[c.transport]||c.transport||'—';
+  $('iMo').textContent=({http2_browsing:I[L].morph_h,video_streaming:I[L].morph_v})[c.morph]||c.morph||'—';
+  $('iCi').textContent=c.cipher||'—';$('iSo').textContent=c.socks||'—';
+  $('morph').textContent=({http2_browsing:I[L].morph_h,video_streaming:I[L].morph_v})[c.morph]||'—';
+  let link='veil://'+encodeURIComponent(c.secret||'')+'@'+(c.server||'');
+  let p=[];if(c.transport&&c.transport!=='raw')p.push('transport='+c.transport);
+  if(c.morph&&c.morph!=='http2_browsing')p.push('morph='+c.morph);
+  if(c.cipher&&c.cipher!=='chacha20-poly1305')p.push('cipher='+c.cipher);
+  if(c.sni)p.push('sni='+c.sni);if(p.length)link+='?'+p.join('&');$('xLink').value=link;
+}
+function oSet(){$('ov').classList.add('on')}
+function cSet(){$('ov').classList.remove('on')}
+function sSet(){W.send(J({action:'save_config',server:$('xSrv').value,secret:$('xSec').value,transport:$('xTr').value,morph:$('xMo').value,cipher:$('xCi').value,sni:$('xSni').value,socks:$('xSo').value}));cSet()}
+function oImp(){$('impLink').value='';$('ovImp').classList.add('on');setTimeout(()=>$('impLink').focus(),100)}
+function cImp(){$('ovImp').classList.remove('on')}
+function doImp(){const link=$('impLink').value.trim();if(!link){aLog(I[L].log_err_link,'error');return}W.send(J({action:'import_link',link:link}))}
+init();
+</script>
+</body>
+</html>

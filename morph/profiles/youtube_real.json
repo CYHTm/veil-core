@@ -1,0 +1,24 @@
+{
+  "name": "youtube_real",
+  "description": "Real YouTube video streaming profile (1080p)",
+  "packet_sizes": {
+    "buckets": [
+      {"min": 24, "max": 66, "weight": 3.8},
+      {"min": 66, "max": 200, "weight": 2.1},
+      {"min": 200, "max": 600, "weight": 1.4},
+      {"min": 600, "max": 1200, "weight": 3.2},
+      {"min": 1200, "max": 1380, "weight": 8.7},
+      {"min": 1380, "max": 1460, "weight": 68.4},
+      {"min": 1460, "max": 2920, "weight": 9.2},
+      {"min": 2920, "max": 16384, "weight": 3.2}
+    ]
+  },
+  "timing": {
+    "min_delay_ms": 0,
+    "max_delay_ms": 40,
+    "mean_delay_ms": 2,
+    "jitter_ms": 5,
+    "burst_size": 32,
+    "burst_gap_ms": 15
+  }
+}

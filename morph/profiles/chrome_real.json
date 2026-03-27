@@ -1,0 +1,26 @@
+{
+  "name": "chrome_real",
+  "description": "Real Chrome 120 HTTP/2 traffic profile captured via tcpdump",
+  "packet_sizes": {
+    "buckets": [
+      {"min": 24, "max": 66, "weight": 18.2},
+      {"min": 66, "max": 150, "weight": 12.4},
+      {"min": 150, "max": 350, "weight": 14.8},
+      {"min": 350, "max": 700, "weight": 11.2},
+      {"min": 700, "max": 1100, "weight": 8.6},
+      {"min": 1100, "max": 1380, "weight": 6.3},
+      {"min": 1380, "max": 1460, "weight": 22.1},
+      {"min": 1460, "max": 2920, "weight": 4.2},
+      {"min": 2920, "max": 8960, "weight": 1.5},
+      {"min": 8960, "max": 16384, "weight": 0.7}
+    ]
+  },
+  "timing": {
+    "min_delay_ms": 0,
+    "max_delay_ms": 500,
+    "mean_delay_ms": 12,
+    "jitter_ms": 35,
+    "burst_size": 6,
+    "burst_gap_ms": 85
+  }
+}

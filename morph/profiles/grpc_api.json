@@ -1,0 +1,21 @@
+{
+  "name": "grpc_api",
+  "description": "Mimics gRPC API traffic pattern",
+  "packet_sizes": {
+    "buckets": [
+      {"min": 40, "max": 80, "weight": 20},
+      {"min": 80, "max": 256, "weight": 35},
+      {"min": 256, "max": 1024, "weight": 30},
+      {"min": 1024, "max": 4096, "weight": 10},
+      {"min": 4096, "max": 16384, "weight": 5}
+    ]
+  },
+  "timing": {
+    "min_delay_ms": 0,
+    "max_delay_ms": 100,
+    "mean_delay_ms": 10,
+    "jitter_ms": 15,
+    "burst_size": 4,
+    "burst_gap_ms": 50
+  }
+}
