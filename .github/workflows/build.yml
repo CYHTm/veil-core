@@ -1,0 +1,52 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+      - name: Test
+        run: go test ./... -count=1
+      - name: Build
+        run: |
+          go build ./...
+          go build -o bin/veil-server ./cmd/veil-server/
+          go build -o bin/veil-client ./cmd/veil-client/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+      - name: Build all platforms
+        run: |
+          mkdir -p dist
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-server-linux-amd64 ./cmd/veil-server/
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-client-linux-amd64 ./cmd/veil-client/
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-app-linux-amd64 ./cmd/veil-app/
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/veil-server-linux-arm64 ./cmd/veil-server/
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/veil-client-linux-arm64 ./cmd/veil-client/
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-client-windows-amd64.exe ./cmd/veil-client/
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-client-macos-intel ./cmd/veil-client/
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/veil-client-macos-arm64 ./cmd/veil-client/
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
