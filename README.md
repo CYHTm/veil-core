@@ -137,6 +137,12 @@ Veil — протокол туннелирования нового поколе
 
 ---
 
+## Disclaimer
+
+See [DISCLAIMER.md](DISCLAIMER.md) before using this software.
+
+Прочитайте [DISCLAIMER.md](DISCLAIMER.md) перед использованием.
+
 ## License
 
 MIT
