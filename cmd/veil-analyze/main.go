@@ -16,7 +16,7 @@ func main() {
 	fmt.Println("  ║     🔬 Veil Protocol — Traffic Analysis Tool     ║")
 	fmt.Println("  ╚══════════════════════════════════════════════════╝")
 
-	// ═══ Тест 1: Размеры пакетов ═══
+	// === Test 1: Packet sizes ===
 	fmt.Println()
 	fmt.Println("  ═══ Тест 1: Размеры пакетов ═══")
 	fmt.Println()
@@ -42,7 +42,7 @@ func main() {
 	fmt.Println("  ✅ Разница очевидна: VPN = один столбик, Veil = распределение как у реального приложения")
 	fmt.Println()
 
-	// ═══ Тест 2: Энтропия ═══
+	// === Test 2: Entropy ===
 	fmt.Println("  ═══ Тест 2: Энтропия (случайность данных) ═══")
 	fmt.Println()
 	fmt.Println("  Реальный текст имеет низкую энтропию (буквы повторяются).")
@@ -51,7 +51,7 @@ func main() {
 	fmt.Println("  Морф-паддинг Veil делает энтропию неотличимой от TLS.")
 	fmt.Println()
 
-	// Реальный текст (HTML)
+	// Real text (HTML)
 	htmlData := []byte("<html><head><title>Example</title></head><body><h1>Hello World</h1><p>This is a normal web page with normal text content that repeats letters frequently.</p></body></html>")
 	for len(htmlData) < 10000 {
 		htmlData = append(htmlData, htmlData...)
@@ -60,19 +60,19 @@ func main() {
 	fmt.Printf("  📄 HTML текст:          энтропия = %.2f / 8.00 бит (низкая — есть паттерны)\n",
 		calculateEntropy(htmlData))
 
-	// Зашифрованные данные
+	// Encrypted data
 	encData := make([]byte, 10000)
 	rand.Read(encData)
 	fmt.Printf("  🔐 Шифрованные данные:  энтропия = %.2f / 8.00 бит (высокая — случайные)\n",
 		calculateEntropy(encData))
 
-	// Реальный TLS трафик (тоже случайный)
+	// Real TLS traffic (also random)
 	tlsData := make([]byte, 10000)
 	rand.Read(tlsData)
 	fmt.Printf("  🌐 Обычный TLS (HTTPS): энтропия = %.2f / 8.00 бит (высокая — норма для TLS)\n",
 		calculateEntropy(tlsData))
 
-	// Морф паддинг
+	// Morph padding
 	morphPad := h2Engine.GeneratePadding(10000)
 	fmt.Printf("  🎭 Veil морф-паддинг:   энтропия = %.2f / 8.00 бит (совпадает с TLS!)\n",
 		calculateEntropy(morphPad))
@@ -81,7 +81,7 @@ func main() {
 	fmt.Println("  ✅ Veil неотличим от обычного HTTPS — та же энтропия")
 	fmt.Println()
 
-	// ═══ Тест 3: Тайминги ═══
+	// === Test 3: Timing ===
 	fmt.Println("  ═══ Тест 3: Тайминги между пакетами ═══")
 	fmt.Println()
 	fmt.Println("  VPN отправляет пакеты мгновенно (0ms задержка).")
@@ -109,14 +109,14 @@ func main() {
 	fmt.Println("\n                            ↑ как настоящий YouTube!")
 	fmt.Println()
 
-	// ═══ Тест 4: Хэндшейк ═══
+	// === Test 4: Handshake ===
 	fmt.Println("  ═══ Тест 4: Полиморфный хэндшейк ═══")
 	fmt.Println()
 	fmt.Println("  Обычный VPN: первые байты ВСЕГДА одинаковые → DPI знает сигнатуру.")
 	fmt.Println("  Veil: первые байты КАЖДЫЙ раз разные → нет сигнатуры для детекта.")
 	fmt.Println()
 
-	// Показать 3 разных хэндшейка
+	// Show 3 different handshakes
 	psk := veilcrypto.GeneratePSK("demo-secret")
 	fmt.Println("  Три хэндшейка с одним и тем же ключом:")
 	fmt.Println()
@@ -142,7 +142,7 @@ func main() {
 	fmt.Println("  ✅ Каждый раз полностью разные байты — невозможно написать сигнатуру")
 	fmt.Println()
 
-	// ═══ ИТОГ ═══
+	// === SUMMARY ===
 	fmt.Println("  ╔══════════════════════════════════════════════════════════╗")
 	fmt.Println("  ║                       📊 ИТОГ                           ║")
 	fmt.Println("  ╠══════════════════════════════════════════════════════════╣")

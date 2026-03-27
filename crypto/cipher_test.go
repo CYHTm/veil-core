@@ -110,13 +110,13 @@ func TestSessionCipherClientServer(t *testing.T) {
 	rand.Read(cN)
 	rand.Read(sN)
 
-	// Клиент: пишет cWK, читает sWK
+	// Client: пишет cWK, читает sWK
 	clientCipher, _ := NewSessionCipher(CipherChaCha20Poly1305, cWK, sWK, cN, sN)
 
-	// Сервер: пишет sWK, читает cWK
+	// Server: пишет sWK, читает cWK
 	serverCipher, _ := NewSessionCipher(CipherChaCha20Poly1305, sWK, cWK, sN, cN)
 
-	// Клиент шифрует → сервер расшифровывает
+	// Client шифрует → сервер расшифровывает
 	msg := []byte("client to server")
 	ct := clientCipher.Encrypt(msg, nil)
 	pt, err := serverCipher.Decrypt(ct, nil)
@@ -127,7 +127,7 @@ func TestSessionCipherClientServer(t *testing.T) {
 		t.Error("client->server message corrupted")
 	}
 
-	// Сервер шифрует → клиент расшифровывает
+	// Server шифрует → клиент расшифровывает
 	msg2 := []byte("server to client")
 	ct2 := serverCipher.Encrypt(msg2, nil)
 	pt2, err := clientCipher.Decrypt(ct2, nil)
