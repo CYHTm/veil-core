@@ -2,9 +2,7 @@ package api
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"sync"
@@ -136,13 +134,13 @@ func (c *Client) Connect() error {
 	}
 
 	// Send length-prefixed ClientHello
-	if err := writeLengthPrefixed(conn, clientHelloBytes); err != nil {
+	if err := writeHandshake(conn, clientHelloBytes); err != nil {
 		conn.Close()
 		return fmt.Errorf("send client hello: %w", err)
 	}
 
 	// Read ServerHello
-	serverHelloBytes, err := readLengthPrefixed(conn)
+	serverHelloBytes, err := readHandshake(conn, 4096)
 	if err != nil {
 		conn.Close()
 		c.events.Emit(Event{Type: EventHandshakeFail, Error: err})
@@ -250,34 +248,4 @@ func (c *Client) IsConnected() bool {
 // Wire helpers — work with io.ReadWriter (not net.Conn)
 // ============================================================
 
-// writeLengthPrefixed writes [4-byte big-endian length][data] to w.
-func writeLengthPrefixed(w io.Writer, data []byte) error {
-	header := make([]byte, 4)
-	binary.BigEndian.PutUint32(header, uint32(len(data)))
 
-	if _, err := w.Write(header); err != nil {
-		return err
-	}
-	_, err := w.Write(data)
-	return err
-}
-
-// readLengthPrefixed reads [4-byte big-endian length][data] from r.
-func readLengthPrefixed(r io.Reader) ([]byte, error) {
-	header := make([]byte, 4)
-	if _, err := io.ReadFull(r, header); err != nil {
-		return nil, err
-	}
-
-	length := binary.BigEndian.Uint32(header)
-	if length == 0 || length > uint32(protocol.MaxPayloadSize) {
-		return nil, fmt.Errorf("invalid length: %d", length)
-	}
-
-	data := make([]byte, length)
-	if _, err := io.ReadFull(r, data); err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}

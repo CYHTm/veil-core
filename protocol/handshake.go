@@ -1,7 +1,9 @@
 package protocol
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +20,11 @@ var (
 )
 
 const (
-	ClientHelloSize     = 48
+	// Core payload: ephemeral_public_key(32) + nonce(16) = 48 bytes
+	ClientHelloCoreSize = 48
+	// Random padding range: 16..128 bytes added to core
+	MinHelloPadding = 16
+	MaxHelloPadding = 128
 	MaxHandshakePayload = 4096
 )
 
@@ -45,22 +51,50 @@ type ClientHello struct {
 	Nonce           [16]byte
 }
 
+// MarshalAndMask serializes, pads to random length, and XOR-masks.
+// Wire format: [2-byte masked length][masked core][random padding]
+// Total size varies every connection — no fixed fingerprint.
 func (ch *ClientHello) MarshalAndMask(psk []byte, transportID string) ([]byte, int64, error) {
-	raw := make([]byte, ClientHelloSize)
-	copy(raw[0:32], ch.EphemeralPublic[:])
-	copy(raw[32:48], ch.Nonce[:])
+	core := make([]byte, ClientHelloCoreSize)
+	copy(core[0:32], ch.EphemeralPublic[:])
+	copy(core[32:48], ch.Nonce[:])
 
-	mask, epoch, err := veilcrypto.DeriveHandshakeMask(psk, transportID, ClientHelloSize)
+	// Random padding length (different every connection)
+	padLenBuf := make([]byte, 1)
+	rand.Read(padLenBuf)
+	padLen := MinHelloPadding + int(padLenBuf[0])%(MaxHelloPadding-MinHelloPadding+1)
+
+	// Generate random padding
+	padding := make([]byte, padLen)
+	rand.Read(padding)
+
+	// Full payload: [core 48 bytes][padding N bytes]
+	payload := append(core, padding...)
+
+	// Get mask for current epoch (mask covers entire payload)
+	mask, epoch, err := veilcrypto.DeriveHandshakeMask(psk, transportID, len(payload))
 	if err != nil {
 		return nil, 0, fmt.Errorf("derive mask: %w", err)
 	}
 
-	masked := veilcrypto.XORBytes(raw, mask)
-	return masked, epoch, nil
+	masked := veilcrypto.XORBytes(payload, mask)
+
+	// Wire format: [2-byte big-endian total length][masked payload]
+	wire := make([]byte, 2+len(masked))
+	binary.BigEndian.PutUint16(wire[0:2], uint16(len(masked)))
+	copy(wire[2:], masked)
+
+	// Mask the length bytes too (so even length looks random)
+	lengthMask := sha256.Sum256(append(psk, byte(epoch), byte(epoch>>8)))
+	wire[0] ^= lengthMask[0]
+	wire[1] ^= lengthMask[1]
+
+	return wire, epoch, nil
 }
 
-func UnmaskClientHello(data []byte, psk []byte, transportID string) (*ClientHello, int64, error) {
-	if len(data) != ClientHelloSize {
+// UnmaskClientHello tries current and previous epoch to decode.
+func UnmaskClientHello(wire []byte, psk []byte, transportID string) (*ClientHello, int64, error) {
+	if len(wire) < 2+ClientHelloCoreSize+MinHelloPadding {
 		return nil, 0, ErrInvalidHandshake
 	}
 
@@ -68,17 +102,30 @@ func UnmaskClientHello(data []byte, psk []byte, transportID string) (*ClientHell
 	currentEpoch := now / int64(veilcrypto.EpochWindow.Seconds())
 
 	for _, epoch := range []int64{currentEpoch, currentEpoch - 1} {
-		mask, err := veilcrypto.DeriveHandshakeMaskForEpoch(psk, transportID, epoch, ClientHelloSize)
+		// Unmask length
+		lengthMask := sha256.Sum256(append(psk, byte(epoch), byte(epoch>>8)))
+		payloadLen := int(binary.BigEndian.Uint16([]byte{
+			wire[0] ^ lengthMask[0],
+			wire[1] ^ lengthMask[1],
+		}))
+
+		if payloadLen < ClientHelloCoreSize+MinHelloPadding || payloadLen > len(wire)-2 {
+			continue
+		}
+
+		// Derive mask for this payload length
+		mask, err := veilcrypto.DeriveHandshakeMaskForEpoch(psk, transportID, epoch, payloadLen)
 		if err != nil {
 			continue
 		}
 
-		unmasked := veilcrypto.XORBytes(data, mask)
+		unmasked := veilcrypto.XORBytes(wire[2:2+payloadLen], mask)
 
 		ch := &ClientHello{}
 		copy(ch.EphemeralPublic[:], unmasked[0:32])
 		copy(ch.Nonce[:], unmasked[32:48])
 
+		// Validate: public key should not be all zeros or low-order points
 		allZero := true
 		for _, b := range ch.EphemeralPublic {
 			if b != 0 {
@@ -103,19 +150,13 @@ type ServerHello struct {
 	CipherType      uint8        `json:"cipher_type"`
 }
 
-// deriveHelloKey derives a symmetric key from PSK + client nonce.
-// Both sides can compute this WITHOUT needing ECDH.
 func deriveHelloKey(psk, clientNonce []byte) (key, nonce []byte) {
-	// Combine PSK and client nonce
 	combined := append(psk, clientNonce...)
 	hash := sha256.Sum256(combined)
 	key = hash[:]
-
-	// Derive a nonce from a different hash
 	nonceInput := append([]byte("veil-hello-nonce-v1|"), clientNonce...)
 	nonceHash := sha256.Sum256(nonceInput)
 	nonce = nonceHash[:12]
-
 	return key, nonce
 }
 
@@ -125,36 +166,57 @@ func MarshalServerHello(sh *ServerHello, psk, clientNonce []byte) ([]byte, error
 		return nil, fmt.Errorf("marshal server hello: %w", err)
 	}
 
-	// Derive key from PSK + client nonce (no ECDH needed)
 	key, nonce := deriveHelloKey(psk, clientNonce)
 
 	cipher, err := veilcrypto.NewSessionCipher(
 		veilcrypto.CipherChaCha20Poly1305,
-		key, key,
-		nonce, nonce,
+		key, key, nonce, nonce,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create cipher: %w", err)
 	}
 
 	encrypted := cipher.Encrypt(payload, nil)
-	return encrypted, nil
+
+	// Add random padding to server hello too
+	padBuf := make([]byte, 1)
+	rand.Read(padBuf)
+	padLen := 16 + int(padBuf[0])%64
+	pad := make([]byte, padLen)
+	rand.Read(pad)
+
+	// Wire: [4-byte encrypted len][encrypted][padding]
+	wire := make([]byte, 4+len(encrypted)+padLen)
+	binary.BigEndian.PutUint32(wire[0:4], uint32(len(encrypted)))
+	copy(wire[4:], encrypted)
+	copy(wire[4+len(encrypted):], pad)
+
+	return wire, nil
 }
 
-func UnmarshalServerHello(data []byte, psk, clientNonce []byte) (*ServerHello, error) {
-	// Derive same key from PSK + client nonce
+func UnmarshalServerHello(wire []byte, psk, clientNonce []byte) (*ServerHello, error) {
+	if len(wire) < 4 {
+		return nil, ErrInvalidHandshake
+	}
+
+	encLen := int(binary.BigEndian.Uint32(wire[0:4]))
+	if encLen <= 0 || encLen > len(wire)-4 {
+		return nil, ErrInvalidHandshake
+	}
+
+	encrypted := wire[4 : 4+encLen]
+
 	key, nonce := deriveHelloKey(psk, clientNonce)
 
 	cipher, err := veilcrypto.NewSessionCipher(
 		veilcrypto.CipherChaCha20Poly1305,
-		key, key,
-		nonce, nonce,
+		key, key, nonce, nonce,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create cipher: %w", err)
 	}
 
-	plaintext, err := cipher.Decrypt(data, nil)
+	plaintext, err := cipher.Decrypt(encrypted, nil)
 	if err != nil {
 		return nil, ErrHandshakeFailed
 	}
@@ -204,21 +266,16 @@ func (h *Handshaker) GenerateClientHello() ([]byte, *veilcrypto.KeyPair, []byte,
 	copy(ch.EphemeralPublic[:], kp.Public[:])
 	copy(ch.Nonce[:], nonce)
 
-	masked, epoch, err := ch.MarshalAndMask(h.psk, h.transportID)
+	wire, epoch, err := ch.MarshalAndMask(h.psk, h.transportID)
 	if err != nil {
 		return nil, nil, nil, 0, err
 	}
 
-	return masked, kp, nonce, epoch, nil
+	return wire, kp, nonce, epoch, nil
 }
 
-// ProcessClientHello — server side.
-// 1. Unmask client hello → get client ephemeral pub + nonce
-// 2. Generate server keypair
-// 3. Encrypt ServerHello with PSK + client nonce (both sides know this)
-// 4. Derive session keys from ECDH + PSK
-func (h *Handshaker) ProcessClientHello(data []byte) ([]byte, *HandshakeResult, *veilcrypto.KeyPair, error) {
-	ch, epoch, err := UnmaskClientHello(data, h.psk, h.transportID)
+func (h *Handshaker) ProcessClientHello(wire []byte) ([]byte, *HandshakeResult, *veilcrypto.KeyPair, error) {
+	ch, epoch, err := UnmaskClientHello(wire, h.psk, h.transportID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -228,7 +285,6 @@ func (h *Handshaker) ProcessClientHello(data []byte) ([]byte, *HandshakeResult, 
 		return nil, nil, nil, fmt.Errorf("generate server keypair: %w", err)
 	}
 
-	// ECDH for session keys (NOT for ServerHello encryption)
 	sharedSecret, err := veilcrypto.ECDH(serverKP.Private[:], ch.EphemeralPublic[:])
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("ECDH: %w", err)
@@ -246,13 +302,11 @@ func (h *Handshaker) ProcessClientHello(data []byte) ([]byte, *HandshakeResult, 
 	copy(sh.EphemeralPublic[:], serverKP.Public[:])
 	copy(sh.SessionID[:], sessionID)
 
-	// Encrypt ServerHello with PSK + client nonce
 	shBytes, err := MarshalServerHello(sh, h.psk, ch.Nonce[:])
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	// Derive session keys from ECDH shared secret + PSK
 	cWK, sWK, cN, sN, err := veilcrypto.DeriveSessionKeys(sharedSecret, h.psk)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("derive session keys: %w", err)
@@ -272,25 +326,17 @@ func (h *Handshaker) ProcessClientHello(data []byte) ([]byte, *HandshakeResult, 
 	return shBytes, result, serverKP, nil
 }
 
-// ProcessServerHello — client side.
-// 1. Decrypt ServerHello with PSK + client nonce
-// 2. Extract server ephemeral public key
-// 3. ECDH(client_private, server_public) → shared secret
-// 4. Derive session keys from shared secret + PSK
-func (h *Handshaker) ProcessServerHello(data []byte, clientKP *veilcrypto.KeyPair, clientNonce []byte) (*HandshakeResult, error) {
-	// Decrypt ServerHello using PSK + client nonce (no ECDH needed)
-	sh, err := UnmarshalServerHello(data, h.psk, clientNonce)
+func (h *Handshaker) ProcessServerHello(wire []byte, clientKP *veilcrypto.KeyPair, clientNonce []byte) (*HandshakeResult, error) {
+	sh, err := UnmarshalServerHello(wire, h.psk, clientNonce)
 	if err != nil {
 		return nil, fmt.Errorf("decrypt server hello: %w", err)
 	}
 
-	// Now we have server's ephemeral public key → do ECDH
 	sharedSecret, err := veilcrypto.ECDH(clientKP.Private[:], sh.EphemeralPublic[:])
 	if err != nil {
 		return nil, fmt.Errorf("ECDH: %w", err)
 	}
 
-	// Derive session keys from ECDH + PSK (same as server)
 	cWK, sWK, cN, sN, err := veilcrypto.DeriveSessionKeys(sharedSecret, h.psk)
 	if err != nil {
 		return nil, fmt.Errorf("derive session keys: %w", err)

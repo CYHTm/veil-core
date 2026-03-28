@@ -318,3 +318,78 @@ func (s *Stream) closeInternal() {
 		close(s.buf)
 	}
 }
+
+// FlowControl tracks per-stream send/receive windows.
+type FlowControl struct {
+	mu         sync.Mutex
+	sendWindow int64
+	recvWindow int64
+	maxWindow  int64
+	waitCh     chan struct{}
+}
+
+// NewFlowControl creates flow control with given window size.
+func NewFlowControl(windowSize int64) *FlowControl {
+	return &FlowControl{
+		sendWindow: windowSize,
+		recvWindow: windowSize,
+		maxWindow:  windowSize,
+		waitCh:     make(chan struct{}, 1),
+	}
+}
+
+// ConsumeSend blocks until there is send window available.
+func (fc *FlowControl) ConsumeSend(n int64) {
+	for {
+		fc.mu.Lock()
+		if fc.sendWindow >= n {
+			fc.sendWindow -= n
+			fc.mu.Unlock()
+			return
+		}
+		fc.mu.Unlock()
+		<-fc.waitCh
+	}
+}
+
+// ReleaseSend adds back to send window (when peer ACKs).
+func (fc *FlowControl) ReleaseSend(n int64) {
+	fc.mu.Lock()
+	fc.sendWindow += n
+	if fc.sendWindow > fc.maxWindow {
+		fc.sendWindow = fc.maxWindow
+	}
+	fc.mu.Unlock()
+	select {
+	case fc.waitCh <- struct{}{}:
+	default:
+	}
+}
+
+// ConsumeRecv decrements receive window.
+func (fc *FlowControl) ConsumeRecv(n int64) bool {
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+	if fc.recvWindow < n {
+		return false
+	}
+	fc.recvWindow -= n
+	return true
+}
+
+// ReleaseRecv adds back to receive window.
+func (fc *FlowControl) ReleaseRecv(n int64) {
+	fc.mu.Lock()
+	fc.recvWindow += n
+	if fc.recvWindow > fc.maxWindow {
+		fc.recvWindow = fc.maxWindow
+	}
+	fc.mu.Unlock()
+}
+
+// SendWindow returns current send window.
+func (fc *FlowControl) SendWindow() int64 {
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+	return fc.sendWindow
+}

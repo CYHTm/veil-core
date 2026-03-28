@@ -176,7 +176,7 @@ func (s *Server) handleConnection(conn transport.Connection) {
 	}
 	handshaker.SetCipher(cipherType)
 
-	clientHelloBytes, err := readLengthPrefixed(conn)
+	clientHelloBytes, err := readHandshake(conn, 4096)
 	if err != nil {
 		s.logger.Printf("read client hello failed (%s): %v", remoteAddr, err)
 		conn.Close()
@@ -191,7 +191,7 @@ func (s *Server) handleConnection(conn transport.Connection) {
 		return
 	}
 
-	if err := writeLengthPrefixed(conn, serverHelloBytes); err != nil {
+	if err := writeHandshake(conn, serverHelloBytes); err != nil {
 		s.logger.Printf("send server hello failed (%s): %v", remoteAddr, err)
 		conn.Close()
 		return
