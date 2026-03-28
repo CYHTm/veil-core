@@ -22,6 +22,7 @@ type ServerFileConfig struct {
 	Cipher        string   `json:"cipher"`
 	MaxStreams     int      `json:"max_streams"`
 	MorphProfiles []string `json:"morph_profiles"`
+	Decoy         bool     `json:"decoy"`
 }
 
 func main() {
@@ -33,6 +34,7 @@ func main() {
 	keyFile := flag.String("key", "", "TLS private key file")
 	cipher := flag.String("cipher", "chacha20-poly1305", "Cipher")
 	maxStreams := flag.Int("max-streams", 256, "Max concurrent streams")
+	decoyMode := flag.Bool("decoy", false, "Decoy mode: server looks like a real website")
 
 	flag.Parse()
 
@@ -41,33 +43,18 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to load config: %v", err)
 		}
-		if fc.Listen != "" && *listenAddr == ":8443" {
-			*listenAddr = fc.Listen
-		}
-		if fc.Secret != "" && *secret == "" {
-			*secret = fc.Secret
-		}
-		if fc.Transport != "" && *transportType == "raw" {
-			*transportType = fc.Transport
-		}
-		if fc.CertFile != "" && *certFile == "" {
-			*certFile = fc.CertFile
-		}
-		if fc.KeyFile != "" && *keyFile == "" {
-			*keyFile = fc.KeyFile
-		}
-		if fc.Cipher != "" && *cipher == "chacha20-poly1305" {
-			*cipher = fc.Cipher
-		}
-		if fc.MaxStreams > 0 && *maxStreams == 256 {
-			*maxStreams = fc.MaxStreams
-		}
+		if fc.Listen != "" && *listenAddr == ":8443" { *listenAddr = fc.Listen }
+		if fc.Secret != "" && *secret == "" { *secret = fc.Secret }
+		if fc.Transport != "" && *transportType == "raw" { *transportType = fc.Transport }
+		if fc.CertFile != "" && *certFile == "" { *certFile = fc.CertFile }
+		if fc.KeyFile != "" && *keyFile == "" { *keyFile = fc.KeyFile }
+		if fc.Cipher != "" && *cipher == "chacha20-poly1305" { *cipher = fc.Cipher }
+		if fc.MaxStreams > 0 && *maxStreams == 256 { *maxStreams = fc.MaxStreams }
+		if fc.Decoy { *decoyMode = true }
 	}
 
 	if *secret == "" {
 		fmt.Fprintln(os.Stderr, "Error: secret is required (-secret or in config file)")
-		fmt.Fprintln(os.Stderr, "  veil-server -secret \"your-secret\"")
-		fmt.Fprintln(os.Stderr, "  veil-server -config server.json")
 		os.Exit(1)
 	}
 
@@ -90,6 +77,65 @@ func main() {
 		},
 	}
 
+	if *decoyMode {
+		startDecoyServer(config)
+	} else {
+		startNormalServer(config, *listenAddr, *transportType, *cipher, *maxStreams)
+	}
+}
+
+func startDecoyServer(config api.ServerConfig) {
+	ds, err := api.NewDecoyServer(config)
+	if err != nil {
+		log.Fatalf("Failed to create decoy server: %v", err)
+	}
+
+	ds.Events().On(api.EventError, func(e api.Event) {
+		log.Printf("❌ Error: %v", e.Error)
+	})
+
+	if err := ds.Start(); err != nil {
+		log.Fatalf("Failed to start: %v", err)
+	}
+
+	cn, cv, hn, hv := ds.GenerateClientTrigger()
+
+	fmt.Println()
+	fmt.Println("  ╔═══════════════════════════════════════════════════╗")
+	fmt.Println("  ║        🛡️  Veil Protocol — Decoy Mode             ║")
+	fmt.Println("  ╠═══════════════════════════════════════════════════╣")
+	fmt.Printf("  ║  Listen:  %-40s ║\n", config.ListenAddr)
+	fmt.Println("  ║  Mode:    DECOY (real website + hidden tunnel)     ║")
+	fmt.Println("  ╠═══════════════════════════════════════════════════╣")
+	fmt.Println("  ║  Normal visitors see: CloudMatrix Inc. website     ║")
+	fmt.Println("  ║  Veil clients: tunnel via steganographic trigger   ║")
+	fmt.Println("  ╠═══════════════════════════════════════════════════╣")
+	fmt.Printf("  ║  Cookie trigger:  %s=%s...  ║\n", cn, cv[:16])
+	fmt.Printf("  ║  Header trigger:  %s: %s...   ║\n", hn, hv[:20])
+	fmt.Println("  ╠═══════════════════════════════════════════════════╣")
+	fmt.Println("  ║  Status: ✅  RUNNING                              ║")
+	fmt.Println("  ║  Press Ctrl+C to stop                             ║")
+	fmt.Println("  ╚═══════════════════════════════════════════════════╝")
+	fmt.Println()
+
+	go func() {
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			log.Printf("📊 Active sessions: %d", ds.ActiveSessions())
+		}
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	fmt.Println("\n⏳ Shutting down...")
+	ds.Stop()
+	fmt.Println("✅ Server stopped.")
+}
+
+func startNormalServer(config api.ServerConfig, listen, transport, cipher string, streams int) {
 	server, err := api.NewServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
@@ -110,10 +156,10 @@ func main() {
 	fmt.Println("  ╔══════════════════════════════════════════════╗")
 	fmt.Println("  ║           🛡️  Veil Protocol Server            ║")
 	fmt.Println("  ╠══════════════════════════════════════════════╣")
-	fmt.Printf("  ║  Listen:      %-30s ║\n", *listenAddr)
-	fmt.Printf("  ║  Transport:   %-30s ║\n", *transportType)
-	fmt.Printf("  ║  Cipher:      %-30s ║\n", *cipher)
-	fmt.Printf("  ║  Max Streams: %-30d ║\n", *maxStreams)
+	fmt.Printf("  ║  Listen:      %-30s ║\n", listen)
+	fmt.Printf("  ║  Transport:   %-30s ║\n", transport)
+	fmt.Printf("  ║  Cipher:      %-30s ║\n", cipher)
+	fmt.Printf("  ║  Max Streams: %-30d ║\n", streams)
 	fmt.Println("  ╠══════════════════════════════════════════════╣")
 	fmt.Println("  ║  Status: ✅  RUNNING                         ║")
 	fmt.Println("  ║  Press Ctrl+C to stop                        ║")
