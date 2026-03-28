@@ -125,7 +125,6 @@ You need a VPS outside of censored regions. Any Linux server works.
 
 **One command:**
 
-```bash
 curl -fsSL https://raw.githubusercontent.com/CYHTm/veil-core/main/install/server.sh | sudo bash
 
 What it does automatically:
