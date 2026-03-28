@@ -14,6 +14,7 @@ import (
 	"github.com/veil-protocol/veil-core/transport"
 	"github.com/veil-protocol/veil-core/transport/raw"
 	veiltls "github.com/veil-protocol/veil-core/transport/tls"
+	"github.com/veil-protocol/veil-core/transport/decoy"
 	"github.com/veil-protocol/veil-core/transport/wss"
 )
 
@@ -73,6 +74,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	c.registry.Register(raw.New())
 	c.registry.Register(veiltls.New())
 	c.registry.Register(wss.New())
+	c.registry.Register(decoy.New())
 
 	return c, nil
 }
@@ -95,6 +97,7 @@ func (c *Client) Connect() error {
 	}
 
 	tConfig := &transport.Config{
+		Headers: map[string]string{"secret": c.config.Secret},
 		SNI:                c.config.SNI,
 		ConnectTimeout:     c.config.ConnectTimeout,
 		InsecureSkipVerify: c.config.InsecureSkipVerify,

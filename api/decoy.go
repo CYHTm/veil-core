@@ -96,7 +96,7 @@ func (ds *DecoyServer) Start() error {
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		MinVersion:   tls.VersionTLS12,
-		NextProtos:   []string{"h2", "http/1.1"},
+		NextProtos:   []string{"http/1.1"},
 	}
 
 	ds.httpServer = &http.Server{
@@ -203,11 +203,11 @@ func (ds *DecoyServer) handleVeilConnection(conn net.Conn, remoteAddr string) {
 	handshaker := protocol.NewHandshaker(
 		protocol.RoleServer,
 		ds.config.Secret,
-		"wss", // decoy mode uses wss-like transport
+		"decoy",
 		protocol.Capabilities{
 			MaxStreams:    ds.config.MaxStreams,
 			MorphProfiles: ds.config.MorphProfiles,
-			Transports:    []string{"wss"},
+			Transports:    []string{"decoy"},
 		},
 	)
 
