@@ -60,9 +60,26 @@ Veil takes a fundamentally different approach. Instead of hiding — **we blend 
 
 ## 🏗 How It Works
 
-YOU YOUR VPS (abroad) INTERNET ─── ──────────────── ────────
+```
+  YOU                        YOUR VPS (abroad)                  INTERNET
+  ───                        ────────────────                   ────────
 
-Browser Veil Server │ ┌──────────────────────┐ │ │ Real Website │ ▼ │ "CloudMatrix Inc." │ Veil Client │ │ │ │ ┌────────────────┐ │ │ TLS 1.3 (Chrome FP) │ │ Hidden Tunnel │ │ ✅ YouTube │─────────────────────────▶│ │ │──┼──────▶ ✅ Google │ Cookie: _ga=GA1.2... │ │ Activated by │ │ ✅ Twitter │ (steganographic trigger)│ │ stego trigger │ │ ✅ Any site │ │ └────────────────┘ │ │ └──────────────────────┘ │ │ DPI sees: "Normal HTTPS request to a corporate website" │ DPI verdict: ✅ ALLOWED
+  Browser                    Veil Server                        │
+                  ┌──────────────────────┐                      │
+                  │    Real Website       │                      │
+                  │  "CloudMatrix Inc."   │                      │
+  Veil Client     │                      │                      │
+                  │ ┌────────────────┐   │                      │
+   TLS 1.3        │ │ Hidden Tunnel  │   │   ✅ YouTube         │
+  (Chrome FP)     │ │                │   │                      │
+  ───────────────▶│ │  Activated by  │   │──▶ ✅ Google         │
+  Cookie: _ga=... │ │ stego trigger  │   │                      │
+  (stego trigger) │ └────────────────┘   │   ✅ Twitter         │
+                  └──────────────────────┘                      │
+                                                                │
+  DPI sees: "Normal HTTPS request to a corporate website"       │
+  DPI verdict: ✅ ALLOWED                                       │
+```
 
 <br>
 
@@ -125,57 +142,69 @@ You need a VPS outside of censored regions. Any Linux server works.
 
 **One command:**
 
+```bash
 curl -fsSL https://raw.githubusercontent.com/CYHTm/veil-core/main/install/server.sh | sudo bash
+```
 
 What it does automatically:
 
-    ✅ Installs Go and dependencies
-    ✅ Builds veil-server from source
-    ✅ Creates systemd service (survives reboot)
-    ✅ Generates a random secret key
-    ✅ Opens firewall port
-    ✅ Prints a connection link for your friends
+- ✅ Installs Go and dependencies
+- ✅ Builds veil-server from source
+- ✅ Creates systemd service (survives reboot)
+- ✅ Generates a random secret key
+- ✅ Opens firewall port
+- ✅ Prints a connection link for your friends
 
 After installation you'll see:
 
+```
   ✅ Veil server installed and running!
 
   Connection link:
   veil://aBcDeFgHiJkLmNoPqRsT@123.45.67.89:443
 
   Send this link to your clients.
+```
 
 Server management:
 
+```bash
 sudo systemctl status veil-server    # Check status
 sudo systemctl restart veil-server   # Restart
 sudo systemctl stop veil-server      # Stop
 sudo journalctl -u veil-server -f    # View logs
+```
 
 <br>
 
-📱 Client
-Option A: GUI App (easiest)
+## 📱 Client
 
-    Download veil-app-linux-amd64 from Releases
-    Make executable: chmod +x veil-app-linux-amd64
-    Run: ./veil-app-linux-amd64
-    Browser opens automatically
-    Click "Import Link"
-    Paste the veil://... link from server owner
-    Click "Connect"
-    Done. Configure your browser to use SOCKS5 proxy 127.0.0.1:1080
+### Option A: GUI App (easiest)
 
-Option B: Terminal
+1. Download `veil-app-linux-amd64` from [Releases](https://github.com/CYHTm/veil-core/releases)
+2. Make executable: `chmod +x veil-app-linux-amd64`
+3. Run: `./veil-app-linux-amd64`
+4. Browser opens automatically
+5. Click **"Import Link"**
+6. Paste the `veil://...` link from server owner
+7. Click **"Connect"**
+8. Done. Configure your browser to use SOCKS5 proxy `127.0.0.1:1080`
 
+### Option B: Terminal
+
+```bash
 ./veil-client -server 123.45.67.89:443 -secret "your-secret" -transport decoy -insecure
+```
 
-Option C: Config File
+### Option C: Config File
 
+```bash
 ./veil-client -config client.json
+```
 
-Example client.json:
+Example `client.json`:
 
+```json
 {
   "server": "123.45.67.89:443",
   "secret": "your-secret",
@@ -184,47 +213,54 @@ Example client.json:
   "socks": "127.0.0.1:1080",
   "morph": "http2_browsing"
 }
+```
 
 <br>
 
-🌐 Browser Setup
+## 🌐 Browser Setup
 
 After the client is connected, configure your browser:
 
-Firefox:
+**Firefox:**
 
-    Settings → Network Settings → Manual proxy configuration
-    SOCKS Host: 127.0.0.1 — Port: 1080
-    Select SOCKS v5
-    Check "Proxy DNS when using SOCKS v5"
+1. Settings → Network Settings → Manual proxy configuration
+2. SOCKS Host: `127.0.0.1` — Port: `1080`
+3. Select **SOCKS v5**
+4. Check **"Proxy DNS when using SOCKS v5"**
 
-Chrome:
+**Chrome:**
 
+```bash
 google-chrome --proxy-server="socks5://127.0.0.1:1080"
+```
 
-System-wide (GNOME):
+**System-wide (GNOME):**
 
-    Settings → Network → Proxy → Manual
-    Socks Host: 127.0.0.1:1080
+1. Settings → Network → Proxy → Manual
+2. Socks Host: `127.0.0.1:1080`
 
 <br>
 
-🔗 Connection Links
+## 🔗 Connection Links
 
 Veil uses shareable links (like VLESS / Shadowsocks):
 
+```
 veil://SECRET@HOST:PORT?transport=decoy&morph=http2_browsing&sni=cdn.example.com
+```
 
-Parameter	Values	Default
-transport	raw, tls, wss, decoy	tls
-morph	http2_browsing, video_streaming	http2_browsing
-cipher	chacha20-poly1305, aes-256-gcm	chacha20-poly1305
-sni	Any domain name	Server hostname
+| Parameter | Values | Default |
+|:---|:---|:---|
+| `transport` | `raw`, `tls`, `wss`, `decoy` | `tls` |
+| `morph` | `http2_browsing`, `video_streaming` | `http2_browsing` |
+| `cipher` | `chacha20-poly1305`, `aes-256-gcm` | `chacha20-poly1305` |
+| `sni` | Any domain name | Server hostname |
 
 <br>
 
-🏛 Architecture
+## 🏛 Architecture
 
+```
 veil-core/
 ├── protocol/          Polymorphic handshake, frames, sessions, state machine
 ├── crypto/            X25519, ChaCha20, HKDF, steganography, replay filter,
@@ -260,13 +296,15 @@ veil-core/
 ├── configs/           Example configuration files
 ├── DISCLAIMER.md      Legal disclaimer (EN/RU)
 └── LICENSE            MIT License
+```
 
 <br>
 
-🛠 Build from Source
+## 🛠 Build from Source
 
-Requirements: Go 1.21+
+**Requirements:** Go 1.21+
 
+```bash
 git clone https://github.com/CYHTm/veil-core.git
 cd veil-core
 
@@ -280,164 +318,221 @@ go test ./...
 
 # Run benchmarks
 go test ./crypto/ -bench=. -benchmem
+```
 
-Cross-compile:
+**Cross-compile:**
 
+```bash
 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o veil-server ./cmd/veil-server/
 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o veil-client.exe ./cmd/veil-client/
 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o veil-client-macos ./cmd/veil-client/
+```
 
 <br>
 
-🤝 Contributing
+## 🤝 Contributing
 
 We need help with:
 
-    Testing against real DPI — if you have a VPS in a censored country, test and report
-    Traffic profiles — capture real browser traffic and build new morph profiles
-    New transports — QUIC/HTTP3, DNS-over-HTTPS steganographic channel
-    Security audit — review cryptographic implementation
-    Mobile clients — Android / iOS apps
+- **Testing against real DPI** — if you have a VPS in a censored country, test and report
+- **Traffic profiles** — capture real browser traffic and build new morph profiles
+- **New transports** — QUIC/HTTP3, DNS-over-HTTPS steganographic channel
+- **Security audit** — review cryptographic implementation
+- **Mobile clients** — Android / iOS apps
 
-See CONTRIBUTING.md for development guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+
 <br>
 
-⚠️ Disclaimer
+## ⚠️ Disclaimer
 
-This software is provided for educational and research purposes. See DISCLAIMER.md.
-<br> <br> <div align="center">
-🛡 VEIL PROTOCOL
-Ваш трафик выглядит как Netflix. Не как VPN.
+This software is provided for educational and research purposes. See [DISCLAIMER.md](DISCLAIMER.md).
 
-Протокол туннелирования нового поколения с полиморфными хэндшейками, морфингом трафика и маскировкой под реальный сайт — невидимый для систем DPI.
-</div> <br>
-🔍 Проблема
+<br>
+
+---
+
+<div align="center">
+
+<br>
+
+# 🛡 VEIL PROTOCOL
+
+### Ваш трафик выглядит как Netflix. Не как VPN.
+
+*Протокол туннелирования нового поколения с полиморфными хэндшейками, морфингом трафика и маскировкой под реальный сайт — невидимый для систем DPI.*
+
+<br>
+
+</div>
+
+## 🔍 Проблема
 
 Каждый день миллионы людей теряют доступ к свободному интернету. VPN блокируют. Shadowsocks детектят. VLESS снимают отпечатки.
 
-Почему? Системы DPI (глубокий анализ пакетов) научились распознавать эти инструменты:
-Что анализирует DPI	Традиционные инструменты	Результат
-🔎 Байты хэндшейка	Одинаковая сигнатура каждый раз	Обнаружен и заблокирован
-📏 Размеры пакетов	Одинаковые, выровнены по MTU	Статистический флаг
-⏱ Тайминги	Нулевые задержки между пакетами	Машинное обучение → флаг
-🔒 TLS отпечаток	Библиотека Go / Python	Отпечаток → блок
-🌐 Проверка сервера	Отвечает как прокси	Подтверждён → блок
-<br>
-✨ Решение
+**Почему?** Системы DPI (глубокий анализ пакетов) научились распознавать эти инструменты:
 
-Veil использует принципиально другой подход. Вместо того чтобы прятаться — мы сливаемся с толпой.
-Что видит DPI	С Veil
-🔎 Байты хэндшейка	Случайные байты, меняются каждые 30 секунд — сигнатуры не существует
-📏 Размеры пакетов	Совпадают с распределением реального Chrome / YouTube — статистически идентичны
-⏱ Тайминги	Искусственный джиттер имитирует реальный сёрфинг — неотличим от человека
-🔒 TLS отпечаток	uTLS клонирует Chrome 120 в точности — DPI видит настоящий браузер
-🌐 Проверка сервера	Отвечает настоящий сайт — туннель спрятан за стеганографическим триггером
+| Что анализирует DPI | Традиционные инструменты | Результат |
+|:---|:---|:---|
+| 🔎 Байты хэндшейка | Одинаковая сигнатура каждый раз | **Обнаружен и заблокирован** |
+| 📏 Размеры пакетов | Одинаковые, выровнены по MTU | **Статистический флаг** |
+| ⏱ Тайминги | Нулевые задержки между пакетами | **Машинное обучение → флаг** |
+| 🔒 TLS отпечаток | Библиотека Go / Python | **Отпечаток → блок** |
+| 🌐 Проверка сервера | Отвечает как прокси | **Подтверждён → блок** |
+
 <br>
-🚀 Быстрый старт
-🖥 Установка сервера
+
+## ✨ Решение
+
+Veil использует принципиально другой подход. Вместо того чтобы прятаться — **мы сливаемся с толпой.**
+
+| Что видит DPI | С Veil |
+|:---|:---|
+| 🔎 Байты хэндшейка | **Случайные байты, меняются каждые 30 секунд** — сигнатуры не существует |
+| 📏 Размеры пакетов | **Совпадают с распределением реального Chrome / YouTube** — статистически идентичны |
+| ⏱ Тайминги | **Искусственный джиттер имитирует реальный сёрфинг** — неотличим от человека |
+| 🔒 TLS отпечаток | **uTLS клонирует Chrome 120 в точности** — DPI видит настоящий браузер |
+| 🌐 Проверка сервера | **Отвечает настоящий сайт** — туннель спрятан за стеганографическим триггером |
+
+<br>
+
+## 🚀 Быстрый старт
+
+### 🖥 Установка сервера
 
 Нужен VPS за пределами цензурируемых регионов. Подойдёт любой Linux.
 
-Одна команда:
+**Одна команда:**
 
+```bash
 curl -fsSL https://raw.githubusercontent.com/CYHTm/veil-core/main/install/server.sh | sudo bash
+```
 
 Скрипт автоматически:
 
-    ✅ Установит Go и зависимости
-    ✅ Соберёт veil-server из исходников
-    ✅ Создаст systemd сервис (переживёт перезагрузку)
-    ✅ Сгенерирует случайный секрет
-    ✅ Откроет порт в фаерволе
-    ✅ Выведет ссылку для подключения
+- ✅ Установит Go и зависимости
+- ✅ Соберёт veil-server из исходников
+- ✅ Создаст systemd сервис (переживёт перезагрузку)
+- ✅ Сгенерирует случайный секрет
+- ✅ Откроет порт в фаерволе
+- ✅ Выведет ссылку для подключения
 
-Управление сервером:
+**Управление сервером:**
 
+```bash
 sudo systemctl status veil-server    # Статус
 sudo systemctl restart veil-server   # Перезапуск
 sudo systemctl stop veil-server      # Остановка
 sudo journalctl -u veil-server -f    # Логи
+```
 
 <br>
-📱 Клиент
-Вариант А: GUI приложение (проще всего)
 
-    Скачайте veil-app-linux-amd64 из Releases
-    Сделайте исполняемым: chmod +x veil-app-linux-amd64
-    Запустите: ./veil-app-linux-amd64
-    Браузер откроется автоматически
-    Нажмите «Импортировать»
-    Вставьте ссылку veil://... от владельца сервера
-    Нажмите «Подключиться»
-    Готово. Настройте браузер на SOCKS5 прокси 127.0.0.1:1080
+## 📱 Клиент
 
-Вариант Б: Терминал
+### Вариант А: GUI приложение (проще всего)
 
+1. Скачайте `veil-app-linux-amd64` из [Releases](https://github.com/CYHTm/veil-core/releases)
+2. Сделайте исполняемым: `chmod +x veil-app-linux-amd64`
+3. Запустите: `./veil-app-linux-amd64`
+4. Браузер откроется автоматически
+5. Нажмите **«Импортировать»**
+6. Вставьте ссылку `veil://...` от владельца сервера
+7. Нажмите **«Подключиться»**
+8. Готово. Настройте браузер на SOCKS5 прокси `127.0.0.1:1080`
+
+### Вариант Б: Терминал
+
+```bash
 ./veil-client -server 123.45.67.89:443 -secret "ваш-секрет" -transport decoy -insecure
+```
 
-Вариант В: Файл конфигурации
+### Вариант В: Файл конфигурации
 
+```bash
 ./veil-client -config client.json
+```
 
 <br>
-🌐 Настройка браузера
+
+## 🌐 Настройка браузера
 
 После подключения клиента настройте браузер:
 
-Firefox:
+**Firefox:**
 
-    Настройки → Параметры сети → Ручная настройка прокси
-    SOCKS: 127.0.0.1 — Порт: 1080
-    SOCKS v5
-    Отметьте «Отправлять DNS-запросы через прокси при использовании SOCKS v5»
+1. Настройки → Параметры сети → Ручная настройка прокси
+2. SOCKS: `127.0.0.1` — Порт: `1080`
+3. **SOCKS v5**
+4. Отметьте **«Отправлять DNS-запросы через прокси при использовании SOCKS v5»**
 
-Chrome:
+**Chrome:**
 
+```bash
 google-chrome --proxy-server="socks5://127.0.0.1:1080"
+```
 
 <br>
-🔗 Ссылки подключения
+
+## 🔗 Ссылки подключения
 
 Veil использует формат ссылок (как VLESS / Shadowsocks):
 
+```
 veil://СЕКРЕТ@ХОСТ:ПОРТ?transport=decoy&morph=http2_browsing
+```
 
-Параметр	Значения	По умолчанию
-transport	raw, tls, wss, decoy	tls
-morph	http2_browsing, video_streaming	http2_browsing
-cipher	chacha20-poly1305, aes-256-gcm	chacha20-poly1305
-sni	Любой домен	Имя хоста сервера
+| Параметр | Значения | По умолчанию |
+|:---|:---|:---|
+| `transport` | `raw`, `tls`, `wss`, `decoy` | `tls` |
+| `morph` | `http2_browsing`, `video_streaming` | `http2_browsing` |
+| `cipher` | `chacha20-poly1305`, `aes-256-gcm` | `chacha20-poly1305` |
+| `sni` | Любой домен | Имя хоста сервера |
+
 <br>
-🛠 Сборка из исходников
 
-Требования: Go 1.21+
+## 🛠 Сборка из исходников
 
+**Требования:** Go 1.21+
+
+```bash
 git clone https://github.com/CYHTm/veil-core.git
 cd veil-core
 go build -o bin/veil-server ./cmd/veil-server/
 go build -o bin/veil-client ./cmd/veil-client/
 go build -o bin/veil-app ./cmd/veil-app/
 go test ./...
+```
 
 <br>
-🤝 Участие в проекте
+
+## 🤝 Участие в проекте
 
 Нам нужна помощь:
 
-    Тестирование против реального DPI — если у вас есть VPS в стране с цензурой
-    Профили трафика — запись реального трафика браузера для новых морф-профилей
-    Аудит безопасности — проверка криптографической реализации
-    Мобильные клиенты — Android / iOS
+- **Тестирование против реального DPI** — если у вас есть VPS в стране с цензурой
+- **Профили трафика** — запись реального трафика браузера для новых морф-профилей
+- **Аудит безопасности** — проверка криптографической реализации
+- **Мобильные клиенты** — Android / iOS
 
-См. CONTRIBUTING.md.
+См. [CONTRIBUTING.md](CONTRIBUTING.md).
+
 <br>
-⚠️ Дисклеймер
 
-ПО предоставляется в образовательных и исследовательских целях. См. DISCLAIMER.md.
-<br> <div align="center"> <br>
+## ⚠️ Дисклеймер
 
-GitHub · Releases · Issues
+ПО предоставляется в образовательных и исследовательских целях. См. [DISCLAIMER.md](DISCLAIMER.md).
+
+<br>
+
+<div align="center">
+
+<br>
+
+[GitHub](https://github.com/CYHTm/veil-core) · [Releases](https://github.com/CYHTm/veil-core/releases) · [Issues](https://github.com/CYHTm/veil-core/issues)
 
 MIT License · Made with purpose
+
 <br>
+
 </div>
