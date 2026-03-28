@@ -20,6 +20,7 @@ type Session struct {
 	id    [16]byte
 	role  HandshakeRole
 	state *StateMachine
+	sendSeq uint32 // global sequence counter for replay protection
 
 	conn      transport.Connection
 	transport transport.Transport
@@ -225,6 +226,10 @@ func (s *Session) frameToMuxMessage(f *Frame) *mux.Message {
 func (s *Session) sendFrame(frame *Frame) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	// Global session-wide seq number prevents replay false positives across streams
+	s.sendSeq++
+	frame.SeqNum = s.sendSeq
 
 	// Apply morph padding and timing
 	if s.morphEngine != nil && frame.Type == FrameStreamData {

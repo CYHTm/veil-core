@@ -157,7 +157,7 @@ func (c *Client) Connect() error {
 		return fmt.Errorf("process server hello: %w", err)
 	}
 
-	c.events.Emit(Event{Type: EventHandshakeOK})
+	c.events.Emit(Event{Type: EventHandshakeOK, SessionID: hsResult.SessionID})
 	c.logger.Printf("handshake complete (session: %x)", hsResult.SessionID[:4])
 
 	var morphProfile *morph.Profile
