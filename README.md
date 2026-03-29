@@ -61,18 +61,18 @@ Veil takes a fundamentally different approach. Instead of hiding — **we blend 
 ## 🏗 How It Works
 
 ```
-  YOU                        YOUR VPS (abroad)                  INTERNET
-  ───                        ────────────────                   ────────
+  YOU                 YOUR VPS (abroad)                  INTERNET
+  ───                 ────────────────                   ────────
 
-  Browser                    Veil Server                        │
+  Browser               Veil Server                             │
                   ┌──────────────────────┐                      │
-                  │    Real Website       │                      │
-                  │  "CloudMatrix Inc."   │                      │
+                  │    Real Website      │                      │
+                  │  "CloudMatrix Inc."  │                      │
   Veil Client     │                      │                      │
                   │ ┌────────────────┐   │                      │
    TLS 1.3        │ │ Hidden Tunnel  │   │   ✅ YouTube         │
   (Chrome FP)     │ │                │   │                      │
-  ───────────────▶│ │  Activated by  │   │──▶ ✅ Google         │
+  ──────────────▶│ │ Activated by │ │  ──▶ ✅ Google          │
   Cookie: _ga=... │ │ stego trigger  │   │                      │
   (stego trigger) │ └────────────────┘   │   ✅ Twitter         │
                   └──────────────────────┘                      │
