@@ -4,7 +4,7 @@
 
 <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
 <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-<img src="https://img.shields.io/badge/Tests-129%20passed-brightgreen?style=for-the-badge" alt="Tests">
+<img src="https://img.shields.io/badge/Tests-147%20passed-brightgreen?style=for-the-badge" alt="Tests">
 <img src="https://img.shields.io/badge/Version-0.1.0-blue?style=for-the-badge" alt="Version">
 <img src="https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge" alt="Status">
 
