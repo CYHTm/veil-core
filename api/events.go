@@ -137,6 +137,14 @@ func (eb *EventBus) EmitSync(event Event) {
 
 // Close shuts down the event bus.
 func (eb *EventBus) Close() {
+	eb.mu.Lock()
+	select {
+	case <-eb.done:
+		eb.mu.Unlock()
+		return // already closed
+	default:
+	}
+	eb.mu.Unlock()
 	close(eb.done)
 }
 
