@@ -1,0 +1,26 @@
+{
+  "name": "tiktok_scrolling",
+  "description": "Mimics TikTok short video feed scrolling (QUIC/HTTPS bursts of 15-60s clips with API gaps)",
+  "packet_sizes": {
+    "buckets": [
+      {"min": 40, "max": 100, "weight": 8.5},
+      {"min": 100, "max": 250, "weight": 6.2},
+      {"min": 250, "max": 500, "weight": 4.8},
+      {"min": 500, "max": 900, "weight": 3.5},
+      {"min": 900, "max": 1200, "weight": 7.8},
+      {"min": 1200, "max": 1380, "weight": 12.4},
+      {"min": 1380, "max": 1460, "weight": 42.3},
+      {"min": 1460, "max": 4096, "weight": 9.8},
+      {"min": 4096, "max": 8192, "weight": 3.2},
+      {"min": 8192, "max": 16384, "weight": 1.5}
+    ]
+  },
+  "timing": {
+    "min_delay_ms": 0,
+    "max_delay_ms": 2000,
+    "mean_delay_ms": 8,
+    "jitter_ms": 45,
+    "burst_size": 30,
+    "burst_gap_ms": 800
+  }
+}

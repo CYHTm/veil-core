@@ -1,0 +1,25 @@
+{
+  "name": "telegram_messaging",
+  "description": "Mimics Telegram MTProto messaging (padded encrypted packets, text/media mix, periodic pings)",
+  "packet_sizes": {
+    "buckets": [
+      {"min": 28, "max": 72, "weight": 16.8},
+      {"min": 72, "max": 176, "weight": 21.4},
+      {"min": 176, "max": 400, "weight": 19.6},
+      {"min": 400, "max": 700, "weight": 12.3},
+      {"min": 700, "max": 1100, "weight": 8.7},
+      {"min": 1100, "max": 1380, "weight": 6.9},
+      {"min": 1380, "max": 1460, "weight": 10.1},
+      {"min": 1460, "max": 4096, "weight": 2.8},
+      {"min": 4096, "max": 16384, "weight": 1.4}
+    ]
+  },
+  "timing": {
+    "min_delay_ms": 0,
+    "max_delay_ms": 15000,
+    "mean_delay_ms": 180,
+    "jitter_ms": 450,
+    "burst_size": 5,
+    "burst_gap_ms": 3000
+  }
+}

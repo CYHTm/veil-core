@@ -1,0 +1,24 @@
+{
+  "name": "discord_chat",
+  "description": "Mimics Discord text chat with WebSocket gateway (compressed JSON events, heartbeats, message bursts)",
+  "packet_sizes": {
+    "buckets": [
+      {"min": 24, "max": 60, "weight": 22.5},
+      {"min": 60, "max": 130, "weight": 18.3},
+      {"min": 130, "max": 300, "weight": 24.7},
+      {"min": 300, "max": 600, "weight": 15.8},
+      {"min": 600, "max": 1100, "weight": 9.4},
+      {"min": 1100, "max": 1460, "weight": 5.2},
+      {"min": 1460, "max": 4096, "weight": 3.1},
+      {"min": 4096, "max": 16384, "weight": 1.0}
+    ]
+  },
+  "timing": {
+    "min_delay_ms": 0,
+    "max_delay_ms": 41500,
+    "mean_delay_ms": 250,
+    "jitter_ms": 800,
+    "burst_size": 4,
+    "burst_gap_ms": 2500
+  }
+}
