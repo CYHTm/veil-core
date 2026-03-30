@@ -1,3 +1,7 @@
+// Package protocol implements the Veil wire protocol.
+//
+// This file manages encrypted sessions including frame encryption,
+// decryption, multiplexed streams, and replay protection.
 package protocol
 
 import (

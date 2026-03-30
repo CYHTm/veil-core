@@ -1,3 +1,8 @@
+// Command veil-analyze is the Veil traffic analysis tool.
+//
+// It can generate morph profiles from pcap captures, compare
+// profiles against builtins, list available profiles, and run
+// an interactive demo showing how Veil defeats DPI.
 package main
 
 import (

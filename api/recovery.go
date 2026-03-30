@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file implements panic recovery middleware to prevent
+// individual goroutine crashes from taking down the process.
 package api
 
 import (

@@ -1,3 +1,8 @@
+// Command veil-server runs the Veil Protocol server.
+//
+// It accepts client connections, performs polymorphic handshakes,
+// manages encrypted sessions, and proxies traffic to the internet.
+// Supports raw TCP, TLS, WebSocket transports, and decoy mode.
 package main
 
 import (

@@ -1,3 +1,7 @@
+// Package protocol implements the Veil wire protocol.
+//
+// This file implements the polymorphic handshake that changes
+// its byte pattern every 30 seconds, preventing DPI signature matching.
 package protocol
 
 import (

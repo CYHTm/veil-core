@@ -1,3 +1,7 @@
+// Package crypto provides cryptographic primitives for Veil.
+//
+// This file implements rate limiting for handshake attempts
+// to prevent brute-force and resource exhaustion attacks.
 package crypto
 
 import (

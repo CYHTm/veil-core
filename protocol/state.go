@@ -1,3 +1,7 @@
+// Package protocol implements the Veil wire protocol.
+//
+// This file defines the session state machine with transitions
+// between handshake, established, and teardown phases.
 package protocol
 
 import (

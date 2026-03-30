@@ -1,3 +1,8 @@
+// Command veil-app runs the Veil Protocol GUI application.
+//
+// It starts a local web server with an embedded HTML/JS interface,
+// communicates via WebSocket, and manages the Veil client connection.
+// Opens automatically in the default browser.
 package main
 
 import (

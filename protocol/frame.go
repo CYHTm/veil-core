@@ -1,3 +1,7 @@
+// Package protocol implements the Veil wire protocol.
+//
+// This file defines frame types, encoding, and decoding for the
+// binary protocol used between Veil client and server.
 package protocol
 
 import (

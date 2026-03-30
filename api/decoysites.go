@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file provides realistic decoy website content served
+// to non-Veil visitors when running in Protocol Completion mode.
 package api
 
 import (

@@ -1,3 +1,8 @@
+// Command veil-app — SOCKS5 proxy handler.
+//
+// This file implements the SOCKS5 proxy server that runs
+// alongside the GUI, forwarding local browser traffic through
+// the Veil tunnel.
 package main
 
 import (

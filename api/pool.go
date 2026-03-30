@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file implements connection pooling for efficient reuse
+// of established tunnels across multiple SOCKS5 requests.
 package api
 
 import (

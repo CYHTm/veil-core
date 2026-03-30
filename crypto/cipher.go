@@ -1,3 +1,7 @@
+// Package crypto provides cryptographic primitives for Veil.
+//
+// This file implements AEAD cipher suites (ChaCha20-Poly1305,
+// AES-256-GCM) with nonce management and authenticated encryption.
 package crypto
 
 import (

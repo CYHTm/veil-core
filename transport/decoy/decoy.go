@@ -1,3 +1,7 @@
+// Package decoy implements decoy traffic generation.
+//
+// Decoy transport sends realistic-looking cover traffic to
+// defeat traffic analysis that relies on flow timing patterns.
 package decoy
 
 import (

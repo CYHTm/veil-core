@@ -1,3 +1,7 @@
+// Package crypto provides cryptographic primitives for Veil.
+//
+// This file implements PSK (Pre-Shared Key) rotation with
+// time-based key derivation for forward secrecy.
 package crypto
 
 import (

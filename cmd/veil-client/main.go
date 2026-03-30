@@ -1,3 +1,8 @@
+// Command veil-client runs the Veil Protocol CLI client.
+//
+// It connects to a Veil server, establishes an encrypted tunnel,
+// and exposes a local SOCKS5 proxy for browser traffic.
+// Supports morph profile selection and config files.
 package main
 
 import (

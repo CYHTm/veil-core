@@ -1,3 +1,7 @@
+// Package crypto provides cryptographic primitives for Veil.
+//
+// This file implements constant-time comparison functions to
+// prevent timing side-channel attacks on secret data.
 package crypto
 
 import (

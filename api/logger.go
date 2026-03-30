@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file implements structured logging with level filtering
+// and optional output to file or custom writers.
 package api
 
 import (

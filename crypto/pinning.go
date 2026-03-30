@@ -1,3 +1,7 @@
+// Package crypto provides cryptographic primitives for Veil.
+//
+// This file implements TLS certificate pinning to prevent
+// man-in-the-middle attacks via compromised certificate authorities.
 package crypto
 
 import (

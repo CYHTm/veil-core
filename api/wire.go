@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file handles wire-level message serialization and
+// deserialization between the API layer and transport.
 package api
 
 import (

@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file implements automatic reconnection with exponential
+// backoff and jitter for resilient client connections.
 package api
 
 import (

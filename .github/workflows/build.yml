@@ -14,39 +14,91 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache: true
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+      - name: Vet
+        run: go vet ./...
       - name: Test
-        run: go test ./... -count=1
-      - name: Build
+        run: go test ./... -count=1 -timeout 120s
+      - name: Test count
         run: |
-          go build ./...
+          COUNT=$(go test ./... -v -count=1 -timeout 120s 2>&1 | grep -c -- '--- PASS')
+          echo "✅ $COUNT tests passed"
+      - name: Build all binaries
+        run: |
           go build -o bin/veil-server ./cmd/veil-server/
           go build -o bin/veil-client ./cmd/veil-client/
+          go build -o bin/veil-app ./cmd/veil-app/
+          go build -o bin/veil-analyze ./cmd/veil-analyze/
+          echo "✅ All binaries built"
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache: true
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            LOG=$(git log --oneline --no-merges | head -50)
+          else
+            LOG=$(git log --oneline --no-merges ${PREV_TAG}..HEAD)
+          fi
+          echo "## Changes" > /tmp/changelog.md
+          echo "" >> /tmp/changelog.md
+          echo "$LOG" | while read line; do
+            echo "- $line" >> /tmp/changelog.md
+          done
+          echo "" >> /tmp/changelog.md
+          COUNT=$(go test ./... -v -count=1 -timeout 120s 2>&1 | grep -c -- '--- PASS' || echo "?")
+          echo "**Tests:** ${COUNT} passed" >> /tmp/changelog.md
+
       - name: Build all platforms
         run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          LDFLAGS="-s -w -X main.version=${VERSION}"
           mkdir -p dist
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-server-linux-amd64 ./cmd/veil-server/
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-client-linux-amd64 ./cmd/veil-client/
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-app-linux-amd64 ./cmd/veil-app/
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/veil-server-linux-arm64 ./cmd/veil-server/
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/veil-client-linux-arm64 ./cmd/veil-client/
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-client-windows-amd64.exe ./cmd/veil-client/
-          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/veil-client-macos-intel ./cmd/veil-client/
-          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/veil-client-macos-arm64 ./cmd/veil-client/
-      - name: Release
-        uses: softprops/action-gh-release@v1
+
+          # Linux amd64
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/veil-server-linux-amd64 ./cmd/veil-server/
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/veil-client-linux-amd64 ./cmd/veil-client/
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/veil-app-linux-amd64 ./cmd/veil-app/
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/veil-analyze-linux-amd64 ./cmd/veil-analyze/
+
+          # Linux arm64
+          GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o dist/veil-server-linux-arm64 ./cmd/veil-server/
+          GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o dist/veil-client-linux-arm64 ./cmd/veil-client/
+
+          # Windows amd64
+          GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/veil-client-windows-amd64.exe ./cmd/veil-client/
+          GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/veil-app-windows-amd64.exe ./cmd/veil-app/
+
+          # macOS
+          GOOS=darwin GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/veil-client-macos-intel ./cmd/veil-client/
+          GOOS=darwin GOARCH=arm64 go build -ldflags="$LDFLAGS" -o dist/veil-client-macos-arm64 ./cmd/veil-client/
+          GOOS=darwin GOARCH=arm64 go build -ldflags="$LDFLAGS" -o dist/veil-app-macos-arm64 ./cmd/veil-app/
+
+          ls -lh dist/
+          echo "✅ All platforms built"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          body_path: /tmp/changelog.md
+          generate_release_notes: true

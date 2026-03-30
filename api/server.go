@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file implements the Veil server that accepts client connections,
+// performs handshakes, manages sessions, and proxies traffic.
 package api
 
 import (

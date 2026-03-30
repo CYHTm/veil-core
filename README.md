@@ -4,7 +4,7 @@
 
 <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
 <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-<img src="https://img.shields.io/badge/Tests-244%20passed-brightgreen?style=for-the-badge" alt="Tests">
+<img src="https://img.shields.io/badge/Tests-394%20passed-brightgreen?style=for-the-badge" alt="Tests">
 <img src="https://img.shields.io/badge/Version-0.1.0-blue?style=for-the-badge" alt="Version">
 <img src="https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge" alt="Status">
 
@@ -300,6 +300,51 @@ veil-core/
 
 <br>
 
+## 🎭 Traffic Morphing Profiles
+
+Veil includes **8 built-in profiles** that make your traffic look like real applications:
+
+| Profile | Mimics | Best For |
+|:--------|:-------|:---------|
+| `http2_browsing` | Chrome HTTP/2 browsing | General web browsing |
+| `video_streaming` | YouTube/Netflix streaming | Video-heavy usage |
+| `chrome_real` | Real Chrome 120 capture | Maximum realism |
+| `youtube_real` | Real YouTube capture | Streaming regions |
+| `tiktok_scrolling` | TikTok feed scrolling | Mobile-like traffic |
+| `discord_chat` | Discord WebSocket chat | Chat-like patterns |
+| `telegram_messaging` | Telegram MTProto | Messaging patterns |
+| `grpc_api` | gRPC API calls | API-like traffic |
+
+```bash
+# List all profiles
+veil-client --list-profiles
+
+# Use a specific profile
+veil-client -morph tiktok_scrolling -server IP:PORT -secret "..."
+
+# Custom profile from pcap
+veil-client -morph /path/to/custom.json -server IP:PORT -secret "..."
+```
+
+<br>
+
+## 🔬 Traffic Analysis Tool
+
+`veil-analyze` lets you generate custom profiles and verify stealth:
+
+```bash
+# Generate profile from pcap
+veil-analyze -pcap myapp.pcap -name my_profile -out my_profile.json
+
+# Compare profile against builtins
+veil-analyze -compare tiktok_scrolling
+
+# List all profiles with stats
+veil-analyze -list
+```
+
+<br>
+
 ## 🛠 Build from Source
 
 **Requirements:** Go 1.21+
@@ -488,6 +533,26 @@ veil://СЕКРЕТ@ХОСТ:ПОРТ?transport=decoy&morph=http2_browsing
 | `morph` | `http2_browsing`, `video_streaming` | `http2_browsing` |
 | `cipher` | `chacha20-poly1305`, `aes-256-gcm` | `chacha20-poly1305` |
 | `sni` | Любой домен | Имя хоста сервера |
+
+<br>
+
+## 🎭 Профили морфинга трафика
+
+Veil включает **8 встроенных профилей** для маскировки трафика:
+
+| Профиль | Имитирует | Применение |
+|:--------|:----------|:-----------|
+| `http2_browsing` | Chrome HTTP/2 | Веб-сёрфинг |
+| `video_streaming` | YouTube/Netflix | Видеотрафик |
+| `tiktok_scrolling` | TikTok | Мобильный трафик |
+| `discord_chat` | Discord | Паттерн мессенджера |
+| `telegram_messaging` | Telegram | Паттерн мессенджера |
+
+```bash
+veil-client --list-profiles
+veil-client -morph tiktok_scrolling -server IP:PORT -secret "..."
+veil-analyze -pcap capture.pcap -name my_profile -out my_profile.json
+```
 
 <br>
 

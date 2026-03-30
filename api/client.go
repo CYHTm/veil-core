@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file implements the Veil client that connects to a server,
+// performs handshakes, opens SOCKS5 streams, and applies traffic morphing.
 package api
 
 import (

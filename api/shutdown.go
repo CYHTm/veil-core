@@ -1,3 +1,7 @@
+// Package api provides the high-level client and server API for Veil.
+//
+// This file implements graceful shutdown with drain timeout,
+// ensuring active streams complete before server stops.
 package api
 
 import (
