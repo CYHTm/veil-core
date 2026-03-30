@@ -2,576 +2,436 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Veil</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veil Protocol</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#000;--bg2:#0a0a0a;
-  --surface:#111;--surface2:#161616;--surface3:#1c1c1c;
-  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
-  --text:#f5f5f7;--text2:rgba(255,255,255,.55);--text3:rgba(255,255,255,.3);
-  --accent:#0a84ff;--accent2:#5ac8fa;--accentg:rgba(10,132,255,.12);
-  --green:#30d158;--greeng:rgba(48,209,88,.12);
-  --red:#ff453a;--redg:rgba(255,69,58,.12);
-  --orange:#ff9f0a;
-  --r:12px;--r2:16px;--r3:24px;
-  --ease:cubic-bezier(.4,0,.2,1);
+  --bg:#0a0e17;--bg2:#111827;--bg3:#1a2236;--bg4:#232d45;
+  --tx:#e2e8f0;--tx2:#94a3b8;--tx3:#64748b;
+  --ac:#6366f1;--ac2:#818cf8;--ac3:#4f46e5;
+  --gn:#22c55e;--gn2:#16a34a;--rd:#ef4444;--yl:#eab308;
+  --br:1px solid rgba(255,255,255,0.06);
+  --sh:0 4px 24px rgba(0,0,0,0.4);
+  --rr:12px;
 }
-html{font-size:15px;scroll-behavior:smooth}
-body{
-  background:var(--bg);color:var(--text);
-  font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
-  min-height:100vh;-webkit-font-smoothing:antialiased;
-  letter-spacing:-.01em;display:flex;flex-direction:column;
-  overflow:hidden;
-}
-.mono{font-family:'JetBrains Mono','SF Mono',monospace;font-size:.8em;letter-spacing:-.02em}
-::selection{background:var(--accentg);color:var(--accent)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
 ::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.15)}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+@media(max-width:768px){.app{grid-template-columns:1fr}}
 
-/* ===== Animations ===== */
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.92)}}
-@keyframes slideIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-@keyframes glow{0%,100%{box-shadow:0 0 8px var(--greeng)}50%{box-shadow:0 0 20px var(--greeng)}}
-.anim-up{animation:fadeUp .5s var(--ease) both}
-.anim-in{animation:fadeIn .4s var(--ease) both}
+/* Sidebar */
+.side{background:var(--bg2);border-right:var(--br);padding:20px;display:flex;flex-direction:column;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;padding:8px 0 16px;border-bottom:var(--br)}
+.logo svg{width:32px;height:32px}
+.logo span{font-size:18px;font-weight:700;letter-spacing:1px}
+.logo small{font-size:10px;color:var(--tx3);margin-left:4px}
 
-/* ===== Top Bar ===== */
-.topbar{
-  display:flex;align-items:center;gap:14px;
-  padding:0 24px;height:52px;
-  background:rgba(17,17,17,.8);
-  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:1px solid var(--border);
-  flex-shrink:0;z-index:10;
-}
-.topbar .icon{
-  width:28px;height:28px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  border-radius:7px;display:grid;place-items:center;font-size:14px;
-}
-.topbar .title{font-size:.85rem;font-weight:600;letter-spacing:-.02em}
-.topbar .title span{color:var(--text3);font-weight:400;margin-left:4px;font-size:.7rem}
-.topbar .spacer{flex:1}
-.topbar .status-pill{
-  display:flex;align-items:center;gap:6px;
-  padding:4px 12px;
-  background:rgba(255,255,255,.04);
-  border:1px solid var(--border);
-  border-radius:100px;
-  transition:all .3s var(--ease);
-}
-.topbar .status-pill.active{border-color:rgba(48,209,88,.2);background:var(--greeng)}
-.status-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--red);
-  transition:all .4s var(--ease);
-}
-.status-dot.on{background:var(--green);animation:glow 3s infinite}
-.status-dot.wait{background:var(--orange);animation:breathe .8s infinite}
-.status-text{font-size:.65rem;font-weight:500;color:var(--text2)}
-.lang{
-  font-size:.6rem;font-weight:500;
-  padding:3px 8px;border-radius:6px;
-  background:transparent;border:1px solid var(--border);
-  color:var(--text3);cursor:pointer;transition:all .2s;
-}
-.lang:hover,.lang.on{border-color:var(--border2);color:var(--text2)}
+/* Status pill */
+.status{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg3);border-radius:var(--rr);border:var(--br)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--tx3);flex-shrink:0;transition:all .3s}
+.dot.on{background:var(--gn);box-shadow:0 0 8px var(--gn)}
+.dot.connecting{background:var(--yl);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.stxt{font-size:13px;color:var(--tx2)}
 
-/* ===== Main Layout ===== */
-.layout{flex:1;display:grid;grid-template-columns:280px 1fr;overflow:hidden}
+/* Info cards */
+.info{display:flex;flex-direction:column;gap:8px}
+.irow{display:flex;justify-content:space-between;padding:6px 0;font-size:12px}
+.irow .lbl{color:var(--tx3)}
+.irow .val{color:var(--tx);font-family:'Courier New',monospace;font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ===== Sidebar ===== */
-.sidebar{
-  background:var(--bg2);
-  border-right:1px solid var(--border);
-  display:flex;flex-direction:column;
-  overflow-y:auto;
-}
-.sb-section{padding:20px}
-.sb-section+.sb-section{border-top:1px solid var(--border)}
-.sb-label{
-  font-size:.6rem;font-weight:600;
-  color:var(--text3);text-transform:uppercase;
-  letter-spacing:.08em;margin-bottom:12px;
-}
+/* Buttons */
+.btn{padding:12px;border:none;border-radius:var(--rr);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center;width:100%}
+.btn-primary{background:var(--ac);color:#fff}
+.btn-primary:hover{background:var(--ac3);transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4)}
+.btn-primary.on{background:var(--rd)}
+.btn-primary.on:hover{background:#dc2626}
+.btn-sm{padding:8px 16px;font-size:12px;width:auto}
+.btn-ghost{background:transparent;color:var(--tx2);border:var(--br)}
+.btn-ghost:hover{background:var(--bg3);color:var(--tx)}
 
-/* Connect Button */
-.connect-btn{
-  width:100%;height:44px;
-  background:var(--accent);
-  border:none;border-radius:var(--r);
-  color:#fff;font-size:.82rem;font-weight:600;
-  letter-spacing:-.01em;
-  cursor:pointer;
-  transition:all .3s var(--ease);
-  position:relative;overflow:hidden;
-}
-.connect-btn::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 50%);
-  pointer-events:none;
-}
-.connect-btn:hover{filter:brightness(1.1);transform:scale(1.01)}
-.connect-btn:active{transform:scale(.98)}
-.connect-btn:disabled{opacity:.35;cursor:default;transform:none;filter:none}
-.connect-btn.off{background:var(--red)}
+/* Side footer */
+.sfooter{margin-top:auto;display:flex;flex-direction:column;gap:8px}
 
-/* Config Display */
-.config-grid{display:flex;flex-direction:column;gap:8px}
-.config-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:6px 0;
-}
-.config-row .label{font-size:.68rem;color:var(--text3)}
-.config-row .value{font-size:.68rem;color:var(--text2);font-weight:500}
+/* Main content */
+.main{padding:24px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;max-height:100vh}
+.main h2{font-size:16px;font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:8px}
 
-/* Sidebar Buttons */
-.sb-btn{
-  width:100%;height:36px;
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  background:transparent;
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  color:var(--text3);font-size:.7rem;font-weight:500;
-  cursor:pointer;transition:all .25s var(--ease);
-  margin-top:6px;
-}
-.sb-btn:hover{border-color:var(--border2);color:var(--text2);background:rgba(255,255,255,.02)}
-.sb-btn.accent{border-color:rgba(10,132,255,.25);color:var(--accent)}
-.sb-btn.accent:hover{background:var(--accentg)}
+/* Stat cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat{background:var(--bg2);border:var(--br);border-radius:var(--rr);padding:16px;display:flex;flex-direction:column;gap:4px}
+.stat .slbl{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px}
+.stat .sval{font-size:22px;font-weight:700;font-family:'Courier New',monospace}
+.stat .sval.speed{color:var(--ac2)}
+.stat .sval.conn{color:var(--gn)}
+.stat .sval.up{color:var(--yl)}
 
-/* ===== Content Area ===== */
-.content{display:flex;flex-direction:column;overflow:hidden}
+/* Traffic graph */
+.graph-wrap{background:var(--bg2);border:var(--br);border-radius:var(--rr);padding:16px}
+.graph-wrap h3{font-size:13px;color:var(--tx3);margin-bottom:12px}
+canvas{width:100%;height:120px;display:block;border-radius:8px}
 
-/* Stats Bar */
-.stats-bar{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
-  background:var(--border);
-  border-bottom:1px solid var(--border);
-}
-.stat{
-  background:var(--bg2);
-  padding:16px 20px;
-  transition:background .2s;
-}
-.stat:hover{background:var(--surface)}
-.stat-value{
-  font-size:1.5rem;font-weight:700;
-  letter-spacing:-.03em;
-  background:linear-gradient(135deg,var(--text),var(--text2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  line-height:1.1;
-}
-.stat-value.accent{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.stat-label{font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+/* Quality indicator */
+.quality{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg3);border-radius:8px;font-size:12px}
+.qbar{display:flex;gap:2px}
+.qbar span{width:4px;height:14px;border-radius:2px;background:var(--bg4)}
+.qbar span.a{background:var(--gn)}
+.qbar span.w{background:var(--yl)}
+.qbar span.b{background:var(--rd)}
+.qlbl{color:var(--tx2)}
 
-/* Log Area */
-.log-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.log-header{
-  padding:12px 24px;
-  font-size:.6rem;font-weight:600;color:var(--text3);
-  text-transform:uppercase;letter-spacing:.08em;
-  border-bottom:1px solid var(--border);
-  background:var(--bg2);
-  display:flex;justify-content:space-between;align-items:center;
-}
-.log-header .clear{
-  font-size:.55rem;color:var(--text3);cursor:pointer;
-  transition:color .2s;padding:2px 6px;border-radius:4px;
-}
-.log-header .clear:hover{color:var(--text2);background:rgba(255,255,255,.04)}
-.log{
-  flex:1;overflow-y:auto;
-  padding:8px 0;
-  font-family:'JetBrains Mono',monospace;font-size:.65rem;line-height:1.8;
-}
-.log-line{padding:0 24px;transition:background .15s}
-.log-line:hover{background:rgba(255,255,255,.02)}
-.log-line .ts{color:var(--text3);margin-right:8px;user-select:none}
-.log-line .msg{color:var(--text2)}
-.log-line.ok .msg{color:var(--green)}
-.log-line.er .msg{color:var(--red)}
-.log-line.st .msg{color:var(--accent)}
+/* Log */
+.logwrap{background:var(--bg2);border:var(--br);border-radius:var(--rr);padding:16px;flex:1;min-height:200px;display:flex;flex-direction:column}
+.logwrap .lhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.logbox{flex:1;overflow-y:auto;font-family:'Courier New',monospace;font-size:12px;line-height:1.8;max-height:300px}
+.logbox .le{padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.02)}
+.le.success{color:var(--gn)} .le.error{color:var(--rd)} .le.stream{color:var(--ac2)}
 
-/* ===== Welcome ===== */
-.welcome{
-  grid-column:1/3;display:flex;
-  align-items:center;justify-content:center;
-  padding:40px;
-  background:var(--bg);
-}
-.welcome.off{display:none}
-.wcard{
-  max-width:440px;width:100%;
-  animation:slideIn .6s var(--ease) both;
-}
-.wcard .wicon{
-  width:64px;height:64px;margin:0 auto 20px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  border-radius:18px;display:grid;place-items:center;font-size:30px;
-  box-shadow:0 12px 40px rgba(10,132,255,.2);
-}
-.wcard h1{
-  text-align:center;font-size:1.8rem;font-weight:800;
-  letter-spacing:-.04em;line-height:1.1;margin-bottom:8px;
-}
-.wcard .sub{
-  text-align:center;color:var(--text2);
-  font-size:.82rem;font-weight:400;line-height:1.5;
-  margin-bottom:32px;
-}
-.steps{display:flex;flex-direction:column;gap:16px;margin-bottom:32px}
-.step{
-  display:flex;gap:14px;align-items:flex-start;
-  padding:14px 16px;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--r2);
-  transition:border-color .2s;
-}
-.step:hover{border-color:var(--border2)}
-.step-num{
-  width:24px;height:24px;flex-shrink:0;
-  background:var(--accentg);
-  border-radius:50%;display:grid;place-items:center;
-  font-size:.6rem;font-weight:700;color:var(--accent);
-}
-.step-body h4{font-size:.78rem;font-weight:600;margin-bottom:2px}
-.step-body p{font-size:.7rem;color:var(--text2);line-height:1.5}
-.step-body code{
-  display:inline-block;margin-top:6px;padding:4px 10px;
-  background:var(--bg);border:1px solid var(--border);
-  border-radius:6px;font-family:'JetBrains Mono',monospace;
-  font-size:.65rem;color:var(--accent);
-  word-break:break-all;
-}
-.wbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.wbtn{
-  height:44px;border:none;border-radius:var(--r);
-  font-size:.78rem;font-weight:600;cursor:pointer;
-  transition:all .25s var(--ease);
-}
-.wbtn.primary{background:var(--accent);color:#fff}
-.wbtn.primary:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 6px 20px rgba(10,132,255,.25)}
-.wbtn.secondary{background:var(--surface);color:var(--text2);border:1px solid var(--border)}
-.wbtn.secondary:hover{border-color:var(--border2);color:var(--text)}
-
-/* ===== Modals ===== */
-.overlay{
-  display:none;position:fixed;inset:0;z-index:100;
-  background:rgba(0,0,0,.6);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  align-items:center;justify-content:center;padding:24px;
-}
+/* Settings overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100}
 .overlay.on{display:flex}
-.modal{
-  background:var(--surface);
-  border:1px solid var(--border2);
-  border-radius:var(--r3);
-  padding:24px;width:100%;max-width:380px;
-  max-height:85vh;overflow-y:auto;
-  animation:slideIn .3s var(--ease) both;
-}
-.modal h2{font-size:1rem;font-weight:700;letter-spacing:-.02em;margin-bottom:20px}
-.field{margin-bottom:14px}
-.field label{
-  display:block;font-size:.6rem;font-weight:600;
-  color:var(--text3);text-transform:uppercase;
-  letter-spacing:.06em;margin-bottom:6px;
-}
-.field input,.field select,.field textarea{
-  width:100%;height:40px;padding:0 12px;
-  background:var(--bg);
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  color:var(--text);
-  font-family:'JetBrains Mono',monospace;font-size:.75rem;
-  outline:none;transition:all .2s;
-}
-.field textarea{height:80px;padding:10px 12px;resize:none}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentg)}
-.field select{cursor:pointer;-webkit-appearance:none;appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='rgba(255,255,255,.3)'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
-}
-.field .hint{font-size:.58rem;color:var(--text3);margin-top:4px;line-height:1.4}
-.modal-sep{border:none;border-top:1px solid var(--border);margin:16px 0}
-.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}
-.modal-btns button{
-  height:40px;border:none;border-radius:var(--r);
-  font-size:.75rem;font-weight:600;cursor:pointer;
-  transition:all .2s var(--ease);
-}
-.btn-ok{background:var(--accent);color:#fff}
-.btn-ok:hover{filter:brightness(1.1)}
-.btn-cancel{background:var(--surface2);color:var(--text3);border:1px solid var(--border) !important}
-.btn-cancel:hover{color:var(--text2)}
+.modal{background:var(--bg2);border:var(--br);border-radius:16px;padding:24px;width:90%;max-width:480px;box-shadow:var(--sh)}
+.modal h2{font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal .close{background:none;border:none;color:var(--tx3);font-size:20px;cursor:pointer;padding:4px 8px}
+.modal .close:hover{color:var(--tx)}
+.fg{display:flex;flex-direction:column;gap:12px}
+.fg label{font-size:12px;color:var(--tx3);margin-bottom:2px}
+.fg input,.fg select{background:var(--bg3);border:var(--br);border-radius:8px;padding:10px 12px;color:var(--tx);font-size:13px;outline:none;width:100%}
+.fg input:focus,.fg select:focus{border-color:var(--ac)}
+.fg select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.fg .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mbtn{display:flex;gap:8px;margin-top:8px}
 
-/* Responsive */
-@media(max-width:700px){
-  .layout{grid-template-columns:1fr}
-  .sidebar{border-right:none;border-bottom:1px solid var(--border)}
-  .stats-bar{grid-template-columns:1fr 1fr}
-  .welcome{padding:20px}
-}
+/* Welcome */
+.welcome{display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
+.welcome .wbox{max-width:400px}
+.welcome h1{font-size:28px;margin-bottom:8px;background:linear-gradient(135deg,var(--ac2),var(--gn));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.welcome p{color:var(--tx2);margin-bottom:24px;font-size:14px;line-height:1.6}
+.welcome .wbtns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* Profile badge */
+.pbadge{display:inline-flex;align-items:center;gap:4px;background:var(--bg3);padding:3px 8px;border-radius:6px;font-size:11px;color:var(--ac2)}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="icon">🛡</div>
-  <div class="title">Veil <span>Protocol</span></div>
-  <div class="spacer"></div>
-  <div class="status-pill" id="pill">
-    <div class="status-dot" id="dot"></div>
-    <span class="status-text" id="stxt">—</span>
-  </div>
-  <button class="lang on" onclick="setLang('en')">EN</button>
-  <button class="lang" onclick="setLang('ru')">RU</button>
-</div>
-
-<div class="layout">
-
-<!-- Welcome -->
+<!-- Welcome screen -->
 <div class="welcome" id="welcome">
-  <div class="wcard">
-    <div class="wicon">🛡</div>
-    <h1 data-i="w_title">Welcome to Veil</h1>
-    <p class="sub" data-i="w_sub">Your traffic looks like Netflix, not like a VPN. Stealth protocol for free internet.</p>
-    <div class="steps">
-      <div class="step anim-up" style="animation-delay:.1s">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <h4 data-i="w_s1h">Get a link</h4>
-          <p data-i="w_s1p">Ask a Veil server owner for a connection link:</p>
-          <code>veil://secret@server:443</code>
-        </div>
-      </div>
-      <div class="step anim-up" style="animation-delay:.2s">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <h4 data-i="w_s2h">Paste the link</h4>
-          <p data-i="w_s2p">Click "Import" — all settings apply automatically.</p>
-        </div>
-      </div>
-      <div class="step anim-up" style="animation-delay:.3s">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <h4 data-i="w_s3h">Connect</h4>
-          <p data-i="w_s3p">One click. All traffic goes through an encrypted tunnel disguised as HTTPS.</p>
-        </div>
-      </div>
-    </div>
-    <div class="wbtns anim-up" style="animation-delay:.4s">
-      <button class="wbtn primary" onclick="oImp()" data-i="w_paste">Import Link</button>
-      <button class="wbtn secondary" onclick="hideWelcome()" data-i="w_manual">Manual Setup</button>
-    </div>
+ <div class="wbox">
+  <h1>Veil Protocol</h1>
+  <p>Stealth tunneling that looks like normal traffic.<br>Import a server link or configure manually.</p>
+  <div class="wbtns">
+   <button class="btn btn-primary" onclick="oImp()">Import veil:// link</button>
+   <button class="btn btn-ghost" onclick="hideWelcome();oSet()">Manual setup</button>
   </div>
+ </div>
 </div>
 
-<!-- Sidebar -->
-<div class="sidebar" id="sidebar" style="display:none">
-  <div class="sb-section">
-    <div class="sb-label" data-i="l_conn">Connection</div>
-    <button class="connect-btn" id="cbtn" onclick="go()" data-i="btn_connect">Connect</button>
+<!-- Main app -->
+<div class="app" id="app" style="display:none">
+
+ <!-- Sidebar -->
+ <div class="side">
+  <div class="logo">
+   <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="#6366f1" stroke-width="2"/><path d="M10 16c0-3.3 2.7-6 6-6s6 2.7 6 6-2.7 6-6 6" stroke="#818cf8" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="#6366f1"/></svg>
+   <span>Veil<small>v0.1.0</small></span>
   </div>
-  <div class="sb-section">
-    <div class="sb-label" data-i="l_config">Configuration</div>
-    <div class="config-grid">
-      <div class="config-row"><span class="label" data-i="c_server">Server</span><span class="value mono" id="iSrv">—</span></div>
-      <div class="config-row"><span class="label" data-i="c_transport">Transport</span><span class="value" id="iTr">—</span></div>
-      <div class="config-row"><span class="label" data-i="c_morph">Morphing</span><span class="value" id="iMo">—</span></div>
-      <div class="config-row"><span class="label" data-i="c_cipher">Cipher</span><span class="value" id="iCi">—</span></div>
-      <div class="config-row"><span class="label" data-i="c_proxy">SOCKS5</span><span class="value mono" id="iSo">—</span></div>
+
+  <div class="status" id="statusCard">
+   <div class="dot" id="dot"></div>
+   <div>
+    <div class="stxt" id="stxt">Disconnected</div>
+    <div class="quality" id="qualityBar" style="display:none;margin-top:6px">
+     <div class="qbar"><span></span><span></span><span></span><span></span><span></span></div>
+     <span class="qlbl" id="qlbl">Checking...</span>
     </div>
+   </div>
   </div>
-  <div class="sb-section">
-    <div class="sb-label" data-i="l_actions">Actions</div>
-    <button class="sb-btn accent" onclick="oImp()" data-i="btn_paste">Import Link</button>
-    <button class="sb-btn" onclick="oSet()" data-i="btn_settings">Settings</button>
+
+  <div class="info" id="infoPanel">
+   <div class="irow"><span class="lbl">Server</span><span class="val" id="iSrv">-</span></div>
+   <div class="irow"><span class="lbl">Transport</span><span class="val" id="iTr">-</span></div>
+   <div class="irow"><span class="lbl">Profile</span><span class="val" id="iMo">-</span></div>
+   <div class="irow"><span class="lbl">Cipher</span><span class="val" id="iCi">-</span></div>
+   <div class="irow"><span class="lbl">SOCKS5</span><span class="val" id="iSo">-</span></div>
   </div>
+
+  <button class="btn btn-primary" id="cbtn" onclick="go()">Connect</button>
+
+  <div class="sfooter">
+   <button class="btn btn-ghost btn-sm" onclick="oImp()">Import link</button>
+   <button class="btn btn-ghost btn-sm" onclick="oSet()">Settings</button>
+  </div>
+ </div>
+
+ <!-- Content -->
+ <div class="main">
+  <h2>Dashboard</h2>
+
+  <div class="stats">
+   <div class="stat"><div class="slbl">Traffic</div><div class="sval speed" id="bw">0 B</div></div>
+   <div class="stat"><div class="slbl">Active Streams</div><div class="sval conn" id="cn">0</div></div>
+   <div class="stat"><div class="slbl">Uptime</div><div class="sval up" id="up">-</div></div>
+   <div class="stat"><div class="slbl">Morph Profile</div><div class="sval"><span class="pbadge" id="morphBadge">-</span></div></div>
+  </div>
+
+  <div class="graph-wrap">
+   <h3>Traffic (last 60s)</h3>
+   <canvas id="graph" height="120"></canvas>
+  </div>
+
+  <div class="logwrap">
+   <div class="lhdr">
+    <h3 style="font-size:13px;color:var(--tx3)">Event Log</h3>
+    <button class="btn btn-ghost btn-sm" onclick="clearLog()">Clear</button>
+   </div>
+   <div class="logbox" id="log"></div>
+  </div>
+ </div>
 </div>
 
-<!-- Content -->
-<div class="content" id="contentArea" style="display:none">
-  <div class="stats-bar">
-    <div class="stat"><div class="stat-value accent" id="bw">0 B</div><div class="stat-label" data-i="st_traffic">Traffic</div></div>
-    <div class="stat"><div class="stat-value" id="cn">0</div><div class="stat-label" data-i="st_streams">Streams</div></div>
-    <div class="stat"><div class="stat-value" id="up">0:00</div><div class="stat-label" data-i="st_uptime">Uptime</div></div>
-    <div class="stat"><div class="stat-value" id="morph">—</div><div class="stat-label" data-i="st_morph">Morphing</div></div>
-  </div>
-  <div class="log-area">
-    <div class="log-header">
-      <span data-i="l_log">Activity</span>
-      <span class="clear" onclick="clearLog()" data-i="btn_clear">Clear</span>
+<!-- Settings modal -->
+<div class="overlay" id="ov">
+ <div class="modal">
+  <h2>Settings <button class="close" onclick="cSet()">&times;</button></h2>
+  <div class="fg">
+   <div>
+    <label>Server address</label>
+    <input id="xSrv" placeholder="1.2.3.4:8443">
+   </div>
+   <div>
+    <label>Secret</label>
+    <input id="xSec" type="password" placeholder="pre-shared secret">
+   </div>
+   <div class="row">
+    <div>
+     <label>Transport</label>
+     <select id="xTr"><option value="raw">Raw TCP</option><option value="tls">TLS</option><option value="wss">WebSocket</option></select>
     </div>
-    <div class="log" id="log"></div>
+    <div>
+     <label>Morph Profile</label>
+     <select id="xMo"><option value="http2_browsing">http2_browsing</option></select>
+    </div>
+   </div>
+   <div class="row">
+    <div>
+     <label>Cipher</label>
+     <select id="xCi"><option value="chacha20-poly1305">ChaCha20-Poly1305</option><option value="aes-256-gcm">AES-256-GCM</option></select>
+    </div>
+    <div>
+     <label>SOCKS5 address</label>
+     <input id="xSo" placeholder="127.0.0.1:1080">
+    </div>
+   </div>
+   <div>
+    <label>SNI override (optional)</label>
+    <input id="xSni" placeholder="example.com">
+   </div>
+   <div>
+    <label>Export link</label>
+    <input id="xLink" readonly style="color:var(--tx3);cursor:pointer" onclick="this.select();document.execCommand('copy')">
+   </div>
+   <div class="mbtn">
+    <button class="btn btn-primary" onclick="sSet()">Save</button>
+    <button class="btn btn-ghost" onclick="cSet()">Cancel</button>
+   </div>
   </div>
+ </div>
 </div>
 
+<!-- Import modal -->
+<div class="overlay" id="ovImp">
+ <div class="modal">
+  <h2>Import Link <button class="close" onclick="cImp()">&times;</button></h2>
+  <div class="fg">
+   <div>
+    <label>Paste veil:// link</label>
+    <input id="impLink" placeholder="veil://...">
+   </div>
+   <div class="mbtn">
+    <button class="btn btn-primary" onclick="doImp()">Import</button>
+    <button class="btn btn-ghost" onclick="cImp()">Cancel</button>
+   </div>
+  </div>
+ </div>
 </div>
-
-<!-- Import Modal -->
-<div class="overlay" id="ovImp"><div class="modal">
-  <h2 data-i="imp_title">Import Configuration</h2>
-  <div class="field">
-    <label data-i="imp_label">Veil Link</label>
-    <textarea id="impLink" placeholder="veil://secret@server:port?transport=tls"></textarea>
-    <div class="hint" data-i="imp_hint">Get this link from a Veil server owner. All settings will apply automatically.</div>
-  </div>
-  <div class="modal-btns">
-    <button class="btn-cancel" onclick="cImp()" data-i="btn_cancel">Cancel</button>
-    <button class="btn-ok" onclick="doImp()" data-i="btn_import">Import</button>
-  </div>
-</div></div>
-
-<!-- Settings Modal -->
-<div class="overlay" id="ov"><div class="modal">
-  <h2 data-i="set_title">Settings</h2>
-  <div class="field"><label data-i="set_server">Server</label><input id="xSrv" placeholder="123.45.67.89:443"></div>
-  <div class="field"><label data-i="set_secret">Secret Key</label><input id="xSec" type="password" placeholder="Shared secret"></div>
-  <div class="field"><label data-i="set_transport">Transport</label>
-    <select id="xTr"><option value="raw">Raw TCP</option><option value="tls">TLS 1.3</option><option value="wss">WebSocket</option><option value="decoy">Decoy (recommended)</option></select></div>
-  <div class="field"><label data-i="set_morph">Traffic Morphing</label>
-    <select id="xMo"><option value="http2_browsing">HTTP/2 Browser</option><option value="video_streaming">Video Streaming</option></select></div>
-  <div class="field"><label data-i="set_cipher">Encryption</label>
-    <select id="xCi"><option value="chacha20-poly1305">ChaCha20-Poly1305</option><option value="aes-256-gcm">AES-256-GCM</option></select></div>
-  <div class="field"><label data-i="set_sni">SNI</label><input id="xSni" placeholder="cdn.example.com">
-    <div class="hint" data-i="set_sni_hint">DPI sees this domain instead of the real server address</div></div>
-  <div class="field"><label data-i="set_socks">SOCKS5 Proxy</label><input id="xSo" placeholder="127.0.0.1:1080"></div>
-  <hr class="modal-sep">
-  <div class="field"><label data-i="set_link">Share Link</label>
-    <input id="xLink" readonly style="color:var(--accent);cursor:pointer" onclick="this.select();navigator.clipboard.writeText(this.value)">
-    <div class="hint" data-i="set_link_hint">Click to copy — send to friends</div></div>
-  <div class="modal-btns">
-    <button class="btn-cancel" onclick="cSet()" data-i="btn_cancel">Cancel</button>
-    <button class="btn-ok" onclick="sSet()" data-i="btn_save">Save</button>
-  </div>
-</div></div>
 
 <script>
-const I={
-en:{
-  w_title:'Welcome to Veil',w_sub:'Your traffic looks like Netflix, not like a VPN. Stealth protocol for free internet.',
-  w_s1h:'Get a link',w_s1p:'Ask a Veil server owner for a connection link:',
-  w_s2h:'Paste the link',w_s2p:'Click "Import" — all settings apply automatically.',
-  w_s3h:'Connect',w_s3p:'One click. All traffic goes through an encrypted tunnel disguised as HTTPS.',
-  w_paste:'Import Link',w_manual:'Manual Setup',
-  l_conn:'Connection',l_config:'Configuration',l_actions:'Actions',l_log:'Activity',
-  c_server:'Server',c_transport:'Transport',c_morph:'Morphing',c_cipher:'Cipher',c_proxy:'SOCKS5',
-  btn_connect:'Connect',btn_disconnect:'Disconnect',btn_connecting:'Connecting...',
-  btn_paste:'Import Link',btn_settings:'Settings',btn_cancel:'Cancel',btn_import:'Import',btn_save:'Save',btn_clear:'Clear',
-  st_traffic:'Traffic',st_streams:'Streams',st_uptime:'Uptime',st_morph:'Morphing',
-  imp_title:'Import Configuration',imp_label:'Veil Link',imp_hint:'Get this link from a Veil server owner.',
-  set_title:'Settings',set_server:'Server',set_secret:'Secret Key',
-  set_transport:'Transport',set_morph:'Traffic Morphing',set_cipher:'Encryption',
-  set_sni:'SNI',set_sni_hint:'DPI sees this domain instead of the real server address',
-  set_socks:'SOCKS5 Proxy',set_link:'Share Link',set_link_hint:'Click to copy — send to friends',
-  s_off:'Disconnected',s_on:'Connected',
-  morph_h:'HTTP/2',morph_v:'Video'
-},
-ru:{
-  w_title:'Добро пожаловать',w_sub:'Ваш трафик выглядит как Netflix, а не как VPN. Протокол невидимости для свободного интернета.',
-  w_s1h:'Получите ссылку',w_s1p:'Запросите ссылку подключения у владельца Veil-сервера:',
-  w_s2h:'Вставьте ссылку',w_s2p:'Нажмите «Импорт» — настройки применятся автоматически.',
-  w_s3h:'Подключитесь',w_s3p:'Один клик. Весь трафик идёт через зашифрованный туннель, замаскированный под HTTPS.',
-  w_paste:'Импортировать',w_manual:'Настроить вручную',
-  l_conn:'Подключение',l_config:'Конфигурация',l_actions:'Действия',l_log:'Активность',
-  c_server:'Сервер',c_transport:'Транспорт',c_morph:'Маскировка',c_cipher:'Шифр',c_proxy:'SOCKS5',
-  btn_connect:'Подключиться',btn_disconnect:'Отключиться',btn_connecting:'Подключение...',
-  btn_paste:'Импортировать',btn_settings:'Настройки',btn_cancel:'Отмена',btn_import:'Импорт',btn_save:'Сохранить',btn_clear:'Очистить',
-  st_traffic:'Трафик',st_streams:'Потоки',st_uptime:'Время',st_morph:'Маскировка',
-  imp_title:'Импорт конфигурации',imp_label:'Ссылка Veil',imp_hint:'Получите ссылку у владельца сервера.',
-  set_title:'Настройки',set_server:'Сервер',set_secret:'Секретный ключ',
-  set_transport:'Транспорт',set_morph:'Маскировка трафика',set_cipher:'Шифрование',
-  set_sni:'SNI',set_sni_hint:'DPI увидит этот домен вместо реального адреса',
-  set_socks:'SOCKS5 прокси',set_link:'Ссылка',set_link_hint:'Нажмите чтобы скопировать',
-  s_off:'Отключен',s_on:'Подключен',
-  morph_h:'HTTP/2',morph_v:'Видео'
-}};
-let L='en',W,C=false,startTime=0,upTimer;
-function setLang(l){
-  L=l;localStorage.setItem('veil_lang',l);
-  document.querySelectorAll('.lang').forEach(b=>b.classList.toggle('on',b.textContent.trim()===l.toUpperCase()));
-  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(I[l][k])el.textContent=I[l][k]});
-  $('stxt').textContent=$('dot').classList.contains('on')?I[l].s_on:I[l].s_off;
-  const b=$('cbtn');if(b&&!b.disabled)b.textContent=C?I[l].btn_disconnect:I[l].btn_connect;
-}
-function init(){
-  setLang(localStorage.getItem('veil_lang')||'en');
-  W=new WebSocket('ws://'+location.host+'/ws');
-  W.onmessage=e=>{const m=JSON.parse(e.data);({
-    status:uSt,stats:uStats,log:uLog,config:uCfg,
-    import_ok:m=>{uCfg(m);cImp();hideWelcome();aLog(I[L].w_s2p,'ok')},
-    import_err:m=>aLog('Error: '+m.text,'er')
-  })[m.type]?.(m)};
-  W.onopen=()=>W.send(J({action:'get_config'}));
-  W.onclose=()=>setTimeout(init,2e3);
-}
+let W,C=false,UP=0,UT,profiles=[];
+const graphData=new Array(60).fill(0);
+let lastBytes=0,prevBytes='0 B';
+
 function $(id){return document.getElementById(id)}
 function J(o){return JSON.stringify(o)}
-function hideWelcome(){$('welcome').style.display='none';$('sidebar').style.display='';$('contentArea').style.display=''}
+
+function init(){
+  W=new WebSocket('ws://'+location.host+'/ws');
+  W.onopen=()=>{W.send(J({action:'get_config'}));W.send(J({action:'list_profiles'}))};
+  W.onmessage=e=>{
+    const m=JSON.parse(e.data);
+    switch(m.type){
+      case'status':uSt(m);break;
+      case'stats':uStats(m);break;
+      case'log':uLog(m);break;
+      case'config':uCfg(m);break;
+      case'profiles':uProfiles(m);break;
+      case'import_ok':cImp();uCfg(m);aLog('Link imported!','success');break;
+      case'import_err':aLog('Import error: '+m.text,'error');break;
+    }
+  };
+  W.onclose=()=>setTimeout(init,2000);
+}
+
+function hideWelcome(){$('welcome').style.display='none';$('app').style.display='grid'}
+
 function uSt(m){
-  const d=$('dot'),b=$('cbtn'),p=$('pill');
-  d.className='status-dot'+(m.state==='connected'?' on':m.state==='connecting'?' wait':'');
-  p.className='status-pill'+(m.state==='connected'?' active':'');
-  $('stxt').textContent=m.state==='connected'?I[L].s_on:m.state==='connecting'?I[L].btn_connecting:I[L].s_off;
-  if(m.state==='connected'){C=true;b.textContent=I[L].btn_disconnect;b.className='connect-btn off';b.disabled=false;startTime=Date.now();upTimer=setInterval(updUp,1000)}
-  else if(m.state==='connecting'){b.textContent=I[L].btn_connecting;b.disabled=true;b.className='connect-btn'}
-  else{C=false;b.textContent=I[L].btn_connect;b.className='connect-btn';b.disabled=false;clearInterval(upTimer);$('up').textContent='0:00'}
+  const d=$('dot'),s=$('stxt'),b=$('cbtn'),q=$('qualityBar');
+  if(m.state==='connected'){
+    C=true;d.className='dot on';s.textContent='Connected';
+    b.textContent='Disconnect';b.classList.add('on');
+    q.style.display='flex';startUptime();updateQuality(5);
+  }else if(m.state==='connecting'){
+    d.className='dot connecting';s.textContent='Connecting...';
+    b.textContent='Connecting...';b.classList.remove('on');
+  }else{
+    C=false;d.className='dot';s.textContent='Disconnected';
+    b.textContent='Connect';b.classList.remove('on');
+    q.style.display='none';stopUptime();
+  }
 }
-function uStats(m){$('bw').textContent=m.bytes;$('cn').textContent=m.conns}
+
+function uStats(m){
+  $('bw').textContent=m.bytes;$('cn').textContent=m.conns;
+  // Parse bytes for graph
+  const b=parseBytes(m.bytes);
+  const delta=b-lastBytes;lastBytes=b;
+  graphData.push(Math.max(0,delta));graphData.shift();
+  drawGraph();
+  // Update quality based on active connections
+  if(C) updateQuality(parseInt(m.conns)>=0?4:2);
+}
+
 function uLog(m){aLog(m.text,m.level)}
+
 function uCfg(c){
-  $('xSrv').value=c.server||'';$('xSec').value=c.secret||'';$('xTr').value=c.transport||'raw';
-  $('xMo').value=c.morph||'http2_browsing';$('xCi').value=c.cipher||'chacha20-poly1305';
-  $('xSni').value=c.sni||'';$('xSo').value=c.socks||'127.0.0.1:1080';
-  $('iSrv').textContent=c.server||'—';
-  $('iTr').textContent=({raw:'TCP',tls:'TLS 1.3',wss:'WSS',decoy:'Decoy'})[c.transport]||'—';
-  $('iMo').textContent=({http2_browsing:I[L].morph_h,video_streaming:I[L].morph_v})[c.morph]||'—';
-  $('iCi').textContent=c.cipher||'—';$('iSo').textContent=c.socks||'—';
-  $('morph').textContent=({http2_browsing:I[L].morph_h,video_streaming:I[L].morph_v})[c.morph]||'—';
-  let lk='veil://'+encodeURIComponent(c.secret||'')+'@'+(c.server||''),p=[];
-  if(c.transport&&c.transport!=='raw')p.push('transport='+c.transport);
-  if(c.morph&&c.morph!=='http2_browsing')p.push('morph='+c.morph);
-  if(c.cipher&&c.cipher!=='chacha20-poly1305')p.push('cipher='+c.cipher);
-  if(c.sni)p.push('sni='+c.sni);if(p.length)lk+='?'+p.join('&');$('xLink').value=lk;
-  if(c.server&&c.secret)hideWelcome();
+  if(c.server){hideWelcome();$('iSrv').textContent=c.server;$('iTr').textContent=c.transport||'raw';
+  $('iMo').textContent=c.morph||'http2_browsing';$('iCi').textContent=c.cipher||'chacha20';
+  $('iSo').textContent=c.socks||'127.0.0.1:1080';$('morphBadge').textContent=c.morph||'http2_browsing';
+  $('xSrv').value=c.server||'';$('xSec').value=c.secret||'';
+  $('xTr').value=c.transport||'raw';$('xMo').value=c.morph||'http2_browsing';
+  $('xCi').value=c.cipher||'chacha20-poly1305';$('xSni').value=c.sni||'';
+  $('xSo').value=c.socks||'127.0.0.1:1080';
+  // Build export link
+  const lk='veil://'+btoa(c.server+'|'+c.secret+'|'+(c.transport||'raw')+'|'+(c.morph||'')+'|'+(c.cipher||'')+'|'+(c.sni||''));
+  $('xLink').value=lk;}
 }
+
+function uProfiles(m){
+  profiles=m.profiles||[];
+  const sel=$('xMo');
+  const cur=sel.value;
+  sel.innerHTML='';
+  profiles.forEach(p=>{
+    const o=document.createElement('option');
+    o.value=p.name;o.textContent=p.name+' - '+p.description;
+    sel.appendChild(o);
+  });
+  if(cur)sel.value=cur;
+}
+
+function updateQuality(level){
+  const bars=$('qualityBar').querySelectorAll('.qbar span');
+  const lbl=$('qlbl');
+  bars.forEach((b,i)=>{b.className=''});
+  if(level>=4){bars.forEach((b,i)=>b.className='a');lbl.textContent='Excellent'}
+  else if(level>=3){for(let i=0;i<4;i++)bars[i].className='a';lbl.textContent='Good'}
+  else if(level>=2){for(let i=0;i<3;i++)bars[i].className='w';lbl.textContent='Fair'}
+  else{for(let i=0;i<2;i++)bars[i].className='b';lbl.textContent='Poor'}
+}
+
+function startUptime(){UP=Date.now();UT=setInterval(updUp,1000)}
+function stopUptime(){clearInterval(UT);$('up').textContent='-';UP=0}
 function updUp(){
-  const s=Math.floor((Date.now()-startTime)/1e3),m=Math.floor(s/60),h=Math.floor(m/60);
-  $('up').textContent=h?h+':'+String(m%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):m+':'+String(s%60).padStart(2,'0');
+  if(!UP)return;
+  const s=Math.floor((Date.now()-UP)/1000);
+  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;
+  $('up').textContent=(h?h+'h ':'')+(m?m+'m ':'')+ss+'s';
 }
+
+function parseBytes(str){
+  const m=str.match(/([\d.]+)\s*(B|KB|MB|GB)/);
+  if(!m)return 0;
+  const v=parseFloat(m[1]),u=m[2];
+  if(u==='GB')return v*1073741824;if(u==='MB')return v*1048576;
+  if(u==='KB')return v*1024;return v;
+}
+
+function drawGraph(){
+  const c=$('graph'),ctx=c.getContext('2d');
+  const W=c.width=c.offsetWidth,H=c.height=120;
+  ctx.clearRect(0,0,W,H);
+  const max=Math.max(1,...graphData);
+  const step=W/59;
+
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+  for(let i=0;i<4;i++){const y=H*(i+1)/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+
+  // Gradient fill
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(99,102,241,0.3)');grad.addColorStop(1,'rgba(99,102,241,0)');
+  ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(0,H);
+  for(let i=0;i<60;i++){const x=i*step,y=H-(graphData[i]/max)*(H-10);
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+
+  // Line
+  ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<60;i++){const x=i*step,y=H-(graphData[i]/max)*(H-10);
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  ctx.stroke();
+}
+
 function aLog(t,l){
-  const a=$('log'),d=document.createElement('div');
-  d.className='log-line anim-in'+(l==='success'||l==='ok'?' ok':l==='error'||l==='er'?' er':l==='stream'||l==='st'?' st':'');
-  const ts=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-  d.innerHTML='<span class="ts">'+ts+'</span><span class="msg">'+t+'</span>';
-  a.appendChild(d);a.scrollTop=9e9;
-  while(a.children.length>300)a.removeChild(a.firstChild);
+  const d=document.createElement('div');d.className='le'+(l?' '+l:'');
+  const ts=new Date().toLocaleTimeString();
+  d.textContent='['+ts+'] '+t;
+  const lb=$('log');lb.appendChild(d);lb.scrollTop=lb.scrollHeight;
+  // Keep max 200 entries
+  while(lb.children.length>200)lb.removeChild(lb.firstChild);
 }
 function clearLog(){$('log').innerHTML=''}
-function go(){W.send(J({action:C?'disconnect':'connect'}))}
+
+function go(){
+  if(!C){
+    if(!$('xSrv').value){aLog('Configure server first','error');oSet();return}
+    W.send(J({action:'connect'}));
+  }else{W.send(J({action:'disconnect'}))}
+}
+
 function oSet(){$('ov').classList.add('on')}
 function cSet(){$('ov').classList.remove('on')}
-function sSet(){W.send(J({action:'save_config',server:$('xSrv').value,secret:$('xSec').value,transport:$('xTr').value,morph:$('xMo').value,cipher:$('xCi').value,sni:$('xSni').value,socks:$('xSo').value}));cSet()}
+function sSet(){
+  W.send(J({action:'save_config',server:$('xSrv').value,secret:$('xSec').value,
+    transport:$('xTr').value,morph:$('xMo').value,cipher:$('xCi').value,
+    sni:$('xSni').value,socks:$('xSo').value}));
+  cSet();
+}
 function oImp(){$('impLink').value='';$('ovImp').classList.add('on');setTimeout(()=>$('impLink').focus(),200)}
 function cImp(){$('ovImp').classList.remove('on')}
-function doImp(){const l=$('impLink').value.trim();if(!l)return;W.send(J({action:'import_link',link:l}))}
-init();
+function doImp(){const l=$('impLink').value.trim();if(!l)return;W.send(J({action:'import_link',link:l}));cImp()}
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){cSet();cImp()}
+  if(e.ctrlKey&&e.key==='k'){e.preventDefault();go()}
+});
+
+// Init
+window.onload=()=>{init();drawGraph()};
 </script>
 </body>
 </html>
