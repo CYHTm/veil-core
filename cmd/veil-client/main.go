@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/veil-protocol/veil-core/api"
+	"github.com/veil-protocol/veil-core/morph"
 )
 
 type ClientFileConfig struct {
@@ -44,7 +45,21 @@ func main() {
 	morphProfile := flag.String("morph", "http2_browsing", "Morph profile")
 	insecure := flag.Bool("insecure", false, "Skip TLS verify (testing)")
 
+	listProfiles := flag.Bool("list-profiles", false, "List available morph profiles")
 	flag.Parse()
+
+	if *listProfiles {
+		fmt.Println("Available morph profiles:")
+		fmt.Println()
+		for _, p := range morph.ListBuiltinProfiles() {
+			fmt.Printf("  %-22s  %s\n", p.Name, p.Description)
+		}
+		fmt.Println()
+		fmt.Println("Use: veil-client -morph <profile-name>")
+		fmt.Println("Or:  veil-client -morph /path/to/custom.json")
+		os.Exit(0)
+	}
+
 
 	if *configFile != "" {
 		fc, err := loadClientConfig(*configFile)

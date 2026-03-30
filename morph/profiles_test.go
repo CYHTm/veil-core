@@ -316,3 +316,101 @@ func TestEngineLoadNewProfiles(t *testing.T) {
 		})
 	}
 }
+
+// TestListBuiltinProfiles verifies the profile registry returns all expected profiles.
+func TestListBuiltinProfiles(t *testing.T) {
+	profiles := ListBuiltinProfiles()
+
+	expected := map[string]bool{
+		"http2_browsing":      false,
+		"video_streaming":     false,
+		"chrome_real":         false,
+		"youtube_real":        false,
+		"tiktok_scrolling":    false,
+		"discord_chat":        false,
+		"telegram_messaging":  false,
+		"grpc_api":            false,
+	}
+
+	for _, p := range profiles {
+		if _, ok := expected[p.Name]; !ok {
+			t.Errorf("unexpected profile in list: %q", p.Name)
+		}
+		expected[p.Name] = true
+		if p.Description == "" {
+			t.Errorf("profile %q has empty description", p.Name)
+		}
+	}
+
+	for name, found := range expected {
+		if !found {
+			t.Errorf("expected profile %q not in list", name)
+		}
+	}
+
+	t.Logf("registry has %d profiles", len(profiles))
+}
+
+// TestGetBuiltinProfile verifies each profile can be retrieved by name.
+func TestGetBuiltinProfile(t *testing.T) {
+	names := []string{
+		"http2_browsing", "video_streaming", "chrome_real", "youtube_real",
+		"tiktok_scrolling", "discord_chat", "telegram_messaging", "grpc_api",
+	}
+
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			p := GetBuiltinProfile(name)
+			if p == nil {
+				t.Fatalf("GetBuiltinProfile(%q) returned nil", name)
+			}
+			if p.Name != name {
+				t.Errorf("name mismatch: got %q, want %q", p.Name, name)
+			}
+			if len(p.PacketSizes.Buckets) == 0 {
+				t.Error("no packet size buckets")
+			}
+			if p.Timing.BurstSize < 1 {
+				t.Error("burst_size < 1")
+			}
+		})
+	}
+}
+
+// TestGetBuiltinProfileUnknown returns nil for unknown names.
+func TestGetBuiltinProfileUnknown(t *testing.T) {
+	p := GetBuiltinProfile("nonexistent_profile")
+	if p != nil {
+		t.Errorf("expected nil for unknown profile, got %v", p.Name)
+	}
+}
+
+// TestResolveProfileBuiltin resolves built-in profiles by name.
+func TestResolveProfileBuiltin(t *testing.T) {
+	p, err := ResolveProfile("tiktok_scrolling")
+	if err != nil {
+		t.Fatalf("ResolveProfile error: %v", err)
+	}
+	if p.Name != "tiktok_scrolling" {
+		t.Errorf("got %q, want tiktok_scrolling", p.Name)
+	}
+}
+
+// TestResolveProfileFile resolves a profile from JSON file.
+func TestResolveProfileFile(t *testing.T) {
+	p, err := ResolveProfile("profiles/discord_chat.json")
+	if err != nil {
+		t.Fatalf("ResolveProfile from file error: %v", err)
+	}
+	if p.Name != "discord_chat" {
+		t.Errorf("got %q, want discord_chat", p.Name)
+	}
+}
+
+// TestResolveProfileUnknown returns error for bad name/path.
+func TestResolveProfileUnknown(t *testing.T) {
+	_, err := ResolveProfile("totally_fake_profile")
+	if err == nil {
+		t.Error("expected error for unknown profile, got nil")
+	}
+}

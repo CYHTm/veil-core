@@ -160,15 +160,12 @@ func (c *Client) Connect() error {
 	c.events.Emit(Event{Type: EventHandshakeOK, SessionID: hsResult.SessionID})
 	c.logger.Printf("handshake complete (session: %x)", hsResult.SessionID[:4])
 
-	var morphProfile *morph.Profile
-	switch c.config.MorphProfile {
-	case "http2_browsing":
-		morphProfile = morph.BuiltinHTTP2Profile()
-	case "video_streaming":
-		morphProfile = morph.BuiltinVideoProfile()
-	default:
+	morphProfile, err := morph.ResolveProfile(c.config.MorphProfile)
+	if err != nil {
+		c.logger.Printf("unknown morph profile %q, falling back to http2_browsing", c.config.MorphProfile)
 		morphProfile = morph.BuiltinHTTP2Profile()
 	}
+	c.logger.Printf("morph profile: %s", morphProfile.Name)
 
 	session, err := protocol.NewSession(protocol.SessionConfig{
 		Role:              protocol.RoleClient,

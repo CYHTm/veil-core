@@ -16,6 +16,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	veilapi "github.com/veil-protocol/veil-core/api"
+	"github.com/veil-protocol/veil-core/morph"
 )
 
 //go:embed web/*
@@ -291,6 +292,16 @@ func (v *VeilApp) sendConfigToAll() {
 		"cipher": v.config.Cipher, "sni": v.config.SNI, "socks": v.config.Socks,
 	})
 }
+func (v *VeilApp) sendProfiles(conn *websocket.Conn) {
+        profiles := morph.ListBuiltinProfiles()
+        type profileMsg struct {
+                Type     string             `json:"type"`
+                Profiles []morph.ProfileInfo `json:"profiles"`
+        }
+        data, _ := json.Marshal(profileMsg{Type: "profiles", Profiles: profiles})
+        conn.WriteMessage(websocket.TextMessage, data)
+}
+
 func (v *VeilApp) statsLoop() {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()

@@ -263,3 +263,211 @@ func BuiltinVideoProfile() *Profile {
 		},
 	}
 }
+
+// ProfileInfo describes an available morph profile.
+type ProfileInfo struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// ListBuiltinProfiles returns all available built-in profile names and descriptions.
+func ListBuiltinProfiles() []ProfileInfo {
+	return []ProfileInfo{
+		{Name: "http2_browsing", Description: "Chrome HTTP/2 web browsing"},
+		{Name: "video_streaming", Description: "YouTube/Netflix video streaming"},
+		{Name: "chrome_real", Description: "Real Chrome 120 captured traffic"},
+		{Name: "youtube_real", Description: "Real YouTube captured traffic"},
+		{Name: "tiktok_scrolling", Description: "TikTok short video feed scrolling"},
+		{Name: "discord_chat", Description: "Discord text chat (WebSocket gateway)"},
+		{Name: "telegram_messaging", Description: "Telegram MTProto messaging"},
+		{Name: "grpc_api", Description: "gRPC API call pattern"},
+	}
+}
+
+// GetBuiltinProfile returns a built-in profile by name, or nil if not found.
+func GetBuiltinProfile(name string) *Profile {
+	switch name {
+	case "http2_browsing":
+		return BuiltinHTTP2Profile()
+	case "video_streaming":
+		return BuiltinVideoProfile()
+	case "tiktok_scrolling":
+		return BuiltinTikTokProfile()
+	case "discord_chat":
+		return BuiltinDiscordProfile()
+	case "telegram_messaging":
+		return BuiltinTelegramProfile()
+	case "chrome_real":
+		return BuiltinChromeRealProfile()
+	case "youtube_real":
+		return BuiltinYouTubeRealProfile()
+	case "grpc_api":
+		return BuiltinGRPCProfile()
+	default:
+		return nil
+	}
+}
+
+// ResolveProfile tries built-in profiles first, then loads from file path.
+func ResolveProfile(nameOrPath string) (*Profile, error) {
+	if p := GetBuiltinProfile(nameOrPath); p != nil {
+		return p, nil
+	}
+	// Try loading as file path
+	return LoadProfile(nameOrPath)
+}
+
+// BuiltinTikTokProfile returns a built-in profile mimicking TikTok feed scrolling.
+func BuiltinTikTokProfile() *Profile {
+	return &Profile{
+		Name:        "tiktok_scrolling",
+		Description: "Mimics TikTok short video feed scrolling (QUIC/HTTPS bursts)",
+		PacketSizes: SizeDistribution{
+			Buckets: []SizeBucket{
+				{Min: 40, Max: 100, Weight: 8.5},
+				{Min: 100, Max: 250, Weight: 6.2},
+				{Min: 250, Max: 500, Weight: 4.8},
+				{Min: 500, Max: 900, Weight: 3.5},
+				{Min: 900, Max: 1200, Weight: 7.8},
+				{Min: 1200, Max: 1380, Weight: 12.4},
+				{Min: 1380, Max: 1460, Weight: 42.3},
+				{Min: 1460, Max: 4096, Weight: 9.8},
+				{Min: 4096, Max: 8192, Weight: 3.2},
+				{Min: 8192, Max: 16384, Weight: 1.5},
+			},
+		},
+		Timing: TimingProfile{
+			MinDelayMs: 0, MaxDelayMs: 2000,
+			MeanDelayMs: 8, JitterMs: 45,
+			BurstSize: 30, BurstGapMs: 800,
+		},
+	}
+}
+
+// BuiltinDiscordProfile returns a built-in profile mimicking Discord text chat.
+func BuiltinDiscordProfile() *Profile {
+	return &Profile{
+		Name:        "discord_chat",
+		Description: "Mimics Discord text chat with WebSocket gateway",
+		PacketSizes: SizeDistribution{
+			Buckets: []SizeBucket{
+				{Min: 24, Max: 60, Weight: 22.5},
+				{Min: 60, Max: 130, Weight: 18.3},
+				{Min: 130, Max: 300, Weight: 24.7},
+				{Min: 300, Max: 600, Weight: 15.8},
+				{Min: 600, Max: 1100, Weight: 9.4},
+				{Min: 1100, Max: 1460, Weight: 5.2},
+				{Min: 1460, Max: 4096, Weight: 3.1},
+				{Min: 4096, Max: 16384, Weight: 1.0},
+			},
+		},
+		Timing: TimingProfile{
+			MinDelayMs: 0, MaxDelayMs: 41500,
+			MeanDelayMs: 250, JitterMs: 800,
+			BurstSize: 4, BurstGapMs: 2500,
+		},
+	}
+}
+
+// BuiltinTelegramProfile returns a built-in profile mimicking Telegram messaging.
+func BuiltinTelegramProfile() *Profile {
+	return &Profile{
+		Name:        "telegram_messaging",
+		Description: "Mimics Telegram MTProto encrypted messaging",
+		PacketSizes: SizeDistribution{
+			Buckets: []SizeBucket{
+				{Min: 28, Max: 72, Weight: 16.8},
+				{Min: 72, Max: 176, Weight: 21.4},
+				{Min: 176, Max: 400, Weight: 19.6},
+				{Min: 400, Max: 700, Weight: 12.3},
+				{Min: 700, Max: 1100, Weight: 8.7},
+				{Min: 1100, Max: 1380, Weight: 6.9},
+				{Min: 1380, Max: 1460, Weight: 10.1},
+				{Min: 1460, Max: 4096, Weight: 2.8},
+				{Min: 4096, Max: 16384, Weight: 1.4},
+			},
+		},
+		Timing: TimingProfile{
+			MinDelayMs: 0, MaxDelayMs: 15000,
+			MeanDelayMs: 180, JitterMs: 450,
+			BurstSize: 5, BurstGapMs: 3000,
+		},
+	}
+}
+
+// BuiltinChromeRealProfile returns a profile based on real Chrome 120 capture.
+func BuiltinChromeRealProfile() *Profile {
+	return &Profile{
+		Name:        "chrome_real",
+		Description: "Real Chrome 120 HTTP/2 traffic profile captured via tcpdump",
+		PacketSizes: SizeDistribution{
+			Buckets: []SizeBucket{
+				{Min: 24, Max: 66, Weight: 18.2},
+				{Min: 66, Max: 150, Weight: 12.4},
+				{Min: 150, Max: 350, Weight: 14.8},
+				{Min: 350, Max: 700, Weight: 11.2},
+				{Min: 700, Max: 1100, Weight: 8.6},
+				{Min: 1100, Max: 1380, Weight: 6.3},
+				{Min: 1380, Max: 1460, Weight: 22.1},
+				{Min: 1460, Max: 2920, Weight: 4.2},
+				{Min: 2920, Max: 8960, Weight: 1.5},
+				{Min: 8960, Max: 16384, Weight: 0.7},
+			},
+		},
+		Timing: TimingProfile{
+			MinDelayMs: 0, MaxDelayMs: 500,
+			MeanDelayMs: 12, JitterMs: 35,
+			BurstSize: 6, BurstGapMs: 85,
+		},
+	}
+}
+
+// BuiltinYouTubeRealProfile returns a profile based on real YouTube capture.
+func BuiltinYouTubeRealProfile() *Profile {
+	return &Profile{
+		Name:        "youtube_real",
+		Description: "Real YouTube streaming traffic captured via tcpdump",
+		PacketSizes: SizeDistribution{
+			Buckets: []SizeBucket{
+				{Min: 24, Max: 66, Weight: 8.5},
+				{Min: 66, Max: 150, Weight: 4.2},
+				{Min: 150, Max: 350, Weight: 3.8},
+				{Min: 350, Max: 700, Weight: 2.1},
+				{Min: 700, Max: 1100, Weight: 3.4},
+				{Min: 1100, Max: 1380, Weight: 8.7},
+				{Min: 1380, Max: 1460, Weight: 58.3},
+				{Min: 1460, Max: 2920, Weight: 7.2},
+				{Min: 2920, Max: 8960, Weight: 2.6},
+				{Min: 8960, Max: 16384, Weight: 1.2},
+			},
+		},
+		Timing: TimingProfile{
+			MinDelayMs: 0, MaxDelayMs: 100,
+			MeanDelayMs: 4, JitterMs: 12,
+			BurstSize: 25, BurstGapMs: 50,
+		},
+	}
+}
+
+// BuiltinGRPCProfile returns a built-in profile mimicking gRPC API traffic.
+func BuiltinGRPCProfile() *Profile {
+	return &Profile{
+		Name:        "grpc_api",
+		Description: "Mimics gRPC API call pattern (HTTP/2 + protobuf)",
+		PacketSizes: SizeDistribution{
+			Buckets: []SizeBucket{
+				{Min: 24, Max: 60, Weight: 20},
+				{Min: 60, Max: 200, Weight: 30},
+				{Min: 200, Max: 500, Weight: 25},
+				{Min: 500, Max: 1000, Weight: 15},
+				{Min: 1000, Max: 1460, Weight: 7},
+				{Min: 1460, Max: 16384, Weight: 3},
+			},
+		},
+		Timing: TimingProfile{
+			MinDelayMs: 0, MaxDelayMs: 300,
+			MeanDelayMs: 20, JitterMs: 30,
+			BurstSize: 3, BurstGapMs: 150,
+		},
+	}
+}

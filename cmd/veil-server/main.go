@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/veil-protocol/veil-core/api"
+	"github.com/veil-protocol/veil-core/morph"
 )
 
 type ServerFileConfig struct {
@@ -36,7 +37,20 @@ func main() {
 	maxStreams := flag.Int("max-streams", 256, "Max concurrent streams")
 	decoyMode := flag.Bool("decoy", false, "Decoy mode: server looks like a real website")
 
+	listProfiles := flag.Bool("list-profiles", false, "List available morph profiles")
+
 	flag.Parse()
+
+	if *listProfiles {
+		fmt.Println("Available morph profiles:")
+		fmt.Println()
+		for _, p := range morph.ListBuiltinProfiles() {
+			fmt.Printf("  %-22s  %s\n", p.Name, p.Description)
+		}
+		fmt.Println()
+		os.Exit(0)
+	}
+
 
 	if *configFile != "" {
 		fc, err := loadServerConfig(*configFile)
