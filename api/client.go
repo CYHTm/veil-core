@@ -17,6 +17,7 @@ import (
 	"github.com/veil-protocol/veil-core/protocol"
 	"github.com/veil-protocol/veil-core/transport"
 	"github.com/veil-protocol/veil-core/transport/raw"
+	veilquic "github.com/veil-protocol/veil-core/transport/quic"
 	veiltls "github.com/veil-protocol/veil-core/transport/tls"
 	"github.com/veil-protocol/veil-core/transport/decoy"
 	"github.com/veil-protocol/veil-core/transport/wss"
@@ -79,6 +80,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	c.registry.Register(veiltls.New())
 	c.registry.Register(wss.New())
 	c.registry.Register(decoy.New())
+	c.registry.Register(veilquic.New())
 
 	return c, nil
 }

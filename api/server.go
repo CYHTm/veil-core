@@ -17,6 +17,7 @@ import (
 	"github.com/veil-protocol/veil-core/protocol"
 	"github.com/veil-protocol/veil-core/transport"
 	"github.com/veil-protocol/veil-core/transport/raw"
+	veilquic "github.com/veil-protocol/veil-core/transport/quic"
 	veiltls "github.com/veil-protocol/veil-core/transport/tls"
 	"github.com/veil-protocol/veil-core/transport/wss"
 )
@@ -72,6 +73,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	s.registry.Register(raw.New())
 	s.registry.Register(veiltls.New())
 	s.registry.Register(wss.New())
+	s.registry.Register(veilquic.New())
 
 	return s, nil
 }

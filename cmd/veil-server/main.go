@@ -35,7 +35,7 @@ func main() {
 	configFile := flag.String("config", "", "Path to config file (JSON)")
 	listenAddr := flag.String("listen", ":8443", "Listen address")
 	secret := flag.String("secret", "", "Pre-shared secret")
-	transportType := flag.String("transport", "raw", "Transport: raw, tls, wss")
+	transportType := flag.String("transport", "raw", "Transport: raw, tls, wss, quic")
 	certFile := flag.String("cert", "", "TLS certificate file")
 	keyFile := flag.String("key", "", "TLS private key file")
 	cipher := flag.String("cipher", "chacha20-poly1305", "Cipher")

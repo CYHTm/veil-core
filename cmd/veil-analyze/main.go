@@ -27,6 +27,7 @@ func main() {
 	profDesc := flag.String("desc", "", "Profile description (for -pcap/-json)")
 	compareTo := flag.String("compare", "", "Compare a profile against all builtins")
 	listMode := flag.Bool("list", false, "List all builtin profiles with stats")
+	reportProfile := flag.String("report", "", "Full stealth report for a profile (histogram + recommendations)")
 	_ = flag.Bool("demo", false, "Run interactive analysis demo")
 
 	flag.Usage = func() {
@@ -36,6 +37,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  veil-analyze -pcap capture.pcap       Generate profile from pcap\n")
 		fmt.Fprintf(os.Stderr, "  veil-analyze -json packets.json       Generate profile from JSON records\n")
 		fmt.Fprintf(os.Stderr, "  veil-analyze -compare tiktok_scrolling  Compare profile vs builtins\n")
+		fmt.Fprintf(os.Stderr, "  veil-analyze -report http2_browsing     Full stealth report with recommendations\n")
 		fmt.Fprintf(os.Stderr, "  veil-analyze -list                    List builtin profiles\n")
 		fmt.Fprintf(os.Stderr, "\nFlags:\n")
 		flag.PrintDefaults()
@@ -56,6 +58,8 @@ func main() {
 		runJSONGenerate(*jsonFile, *outFile, *profName, *profDesc)
 	case *compareTo != "":
 		runCompare(*compareTo)
+	case *reportProfile != "":
+		runReport(*reportProfile)
 	case *listMode:
 		runList()
 	default:
@@ -244,6 +248,267 @@ func clampDiff(a, b, maxDiff float64) float64 {
 	}
 	return d
 }
+
+// ── Stealth Report ──────────────────────────────────────────
+
+func runReport(nameOrPath string) {
+	profile, err := morph.ResolveProfile(nameOrPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "\u274c Cannot load profile %q: %v\n", nameOrPath, err)
+		os.Exit(1)
+	}
+
+	fmt.Println()
+	fmt.Println("  \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557")
+	fmt.Println("  \u2551     \U0001f50d Veil Stealth Report                           \u2551")
+	fmt.Println("  \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d")
+	fmt.Println()
+	fmt.Printf("  Profile: %s\n", profile.Name)
+	fmt.Printf("  %s\n\n", profile.Description)
+
+	// === Section 1: Packet Size Distribution ===
+	fmt.Println("  \u2500\u2500\u2500 Packet Size Distribution \u2500\u2500\u2500")
+	fmt.Println()
+	printHistogram(profile.PacketSizes.Buckets)
+
+	// === Section 2: Timing Analysis ===
+	fmt.Println("  \u2500\u2500\u2500 Timing Analysis \u2500\u2500\u2500")
+	fmt.Println()
+	tm := profile.Timing
+	fmt.Printf("    Mean delay:   %6.0f ms\n", tm.MeanDelayMs)
+	fmt.Printf("    Jitter:       %6.0f ms\n", tm.JitterMs)
+	fmt.Printf("    Burst size:   %6d pkts\n", tm.BurstSize)
+	fmt.Printf("    Burst gap:    %6d ms\n", tm.BurstGapMs)
+	fmt.Printf("    Range:        %d\u2013%d ms\n\n", tm.MinDelayMs, tm.MaxDelayMs)
+
+	// Simulate timing sample
+	fmt.Print("    Sample: ")
+	te := morph.NewTimingEngine(&tm)
+	for i := 0; i < 12; i++ {
+		fmt.Printf("%dms ", te.NextDelay().Milliseconds())
+	}
+	fmt.Println()
+
+	// === Section 3: Similarity Matrix ===
+	fmt.Println("  \u2500\u2500\u2500 Similarity to Known Traffic \u2500\u2500\u2500")
+	fmt.Println()
+
+	type simResult struct {
+		name string
+		pct  float64
+	}
+	var results []simResult
+	for _, bi := range morph.ListBuiltinProfiles() {
+		if bi.Name == profile.Name {
+			continue
+		}
+		other := morph.GetBuiltinProfile(bi.Name)
+		if other == nil {
+			continue
+		}
+		sim := profileSimilarity(profile, other)
+		results = append(results, simResult{bi.Name, sim})
+	}
+	sort.Slice(results, func(i, j int) bool { return results[i].pct > results[j].pct })
+
+	for _, r := range results {
+		barLen := int(r.pct / 2.5)
+		if barLen > 40 { barLen = 40 }
+		bar := strings.Repeat("\u2588", barLen) + strings.Repeat("\u2591", 40-barLen)
+		fmt.Printf("    %-22s %5.1f%% %s\n", r.name, r.pct, bar)
+	}
+	fmt.Println()
+
+	// === Section 4: Entropy Check ===
+	fmt.Println("  \u2500\u2500\u2500 Entropy Analysis \u2500\u2500\u2500")
+	fmt.Println()
+	engine := morph.NewEngine(profile)
+	padding := engine.GeneratePadding(10000)
+	entropy := calculateEntropy(padding)
+	entBar := int(entropy / 8.0 * 40)
+	fmt.Printf("    Padding entropy:  %.2f / 8.00 bits\n", entropy)
+	fmt.Printf("    %s\n", strings.Repeat("\u2588", entBar) + strings.Repeat("\u2591", 40-entBar))
+	if entropy > 7.9 {
+		fmt.Println("    \u2705 Excellent \u2014 indistinguishable from TLS")
+	} else if entropy > 7.5 {
+		fmt.Println("    \u26a0\ufe0f  Good \u2014 close to TLS, minor patterns possible")
+	} else {
+		fmt.Println("    \u274c Poor \u2014 detectable patterns in padding bytes")
+	}
+	fmt.Println()
+
+	// === Section 5: Stealth Score ===
+	scoreSize := scoreSizeDistribution(profile)
+	scoreTiming := scoreTimingRealism(profile)
+	scoreEntropy := math.Min(entropy/8.0*100, 100)
+	scoreBurst := scoreBurstPattern(profile)
+	overall := (scoreSize*30 + scoreTiming*25 + scoreEntropy*25 + scoreBurst*20) / 100
+
+	fmt.Println("  \u2500\u2500\u2500 Stealth Score \u2500\u2500\u2500")
+	fmt.Println()
+	printScoreBar("  Size distribution", scoreSize)
+	printScoreBar("  Timing realism   ", scoreTiming)
+	printScoreBar("  Entropy          ", scoreEntropy)
+	printScoreBar("  Burst pattern    ", scoreBurst)
+	fmt.Println()
+	printScoreBar("  \u2605 OVERALL         ", overall)
+	fmt.Println()
+
+	if overall >= 85 {
+		fmt.Println("  \U0001f6e1 Verdict: EXCELLENT stealth \u2014 very hard for DPI to detect")
+	} else if overall >= 70 {
+		fmt.Println("  \U0001f6e1 Verdict: GOOD stealth \u2014 defeats most DPI systems")
+	} else if overall >= 50 {
+		fmt.Println("  \u26a0\ufe0f  Verdict: MODERATE stealth \u2014 advanced DPI may flag this")
+	} else {
+		fmt.Println("  \u274c Verdict: WEAK stealth \u2014 likely detectable by statistical DPI")
+	}
+	fmt.Println()
+
+	// === Section 6: Recommendations ===
+	fmt.Println("  \u2500\u2500\u2500 Recommendations \u2500\u2500\u2500")
+	fmt.Println()
+	recommendations := generateRecommendations(profile, scoreSize, scoreTiming, scoreBurst)
+	if len(recommendations) == 0 {
+		fmt.Println("    \u2705 No issues found \u2014 profile looks great!")
+	} else {
+		for _, r := range recommendations {
+			fmt.Printf("    \u2022 %s\n", r)
+		}
+	}
+	fmt.Println()
+}
+
+func printHistogram(buckets []morph.SizeBucket) {
+	maxW := 0.0
+	for _, b := range buckets {
+		if b.Weight > maxW {
+			maxW = b.Weight
+		}
+	}
+	for _, b := range buckets {
+		barLen := int(b.Weight / maxW * 30)
+		bar := strings.Repeat("\u2588", barLen) + strings.Repeat("\u2591", 30-barLen)
+		fmt.Printf("    %5d-%-5d %5.1f%% %s\n", b.Min, b.Max, b.Weight, bar)
+	}
+	fmt.Println()
+}
+
+func printScoreBar(label string, score float64) {
+	barLen := int(score / 100 * 30)
+	if barLen > 30 { barLen = 30 }
+	var color string
+	if score >= 80 {
+		color = "\u2588"
+	} else if score >= 60 {
+		color = "\u2593"
+	} else {
+		color = "\u2592"
+	}
+	bar := strings.Repeat(color, barLen) + strings.Repeat("\u2591", 30-barLen)
+	grade := "F"
+	switch {
+	case score >= 90: grade = "A+"
+	case score >= 80: grade = "A"
+	case score >= 70: grade = "B"
+	case score >= 60: grade = "C"
+	case score >= 50: grade = "D"
+	}
+	fmt.Printf("    %s  %s %5.1f%% [%s]\n", label, bar, score, grade)
+}
+
+func scoreSizeDistribution(p *morph.Profile) float64 {
+	buckets := p.PacketSizes.Buckets
+	if len(buckets) == 0 { return 0 }
+	// More buckets = more realistic distribution
+	bucketScore := math.Min(float64(len(buckets))/8.0*100, 100)
+	// Weight spread: check that no single bucket dominates >60%
+	maxW := 0.0
+	for _, b := range buckets {
+		if b.Weight > maxW { maxW = b.Weight }
+	}
+	spreadScore := 100.0
+	if maxW > 60 { spreadScore = 60 }
+	if maxW > 80 { spreadScore = 30 }
+	// Has small packets (ACKs)?
+	hasSmall := false
+	for _, b := range buckets {
+		if b.Min < 100 && b.Weight > 3 { hasSmall = true }
+	}
+	smallScore := 60.0
+	if hasSmall { smallScore = 100 }
+	return (bucketScore*40 + spreadScore*35 + smallScore*25) / 100
+}
+
+func scoreTimingRealism(p *morph.Profile) float64 {
+	tm := p.Timing
+	// Zero jitter is suspicious
+	jitterScore := 100.0
+	if tm.JitterMs < 5 { jitterScore = 30 }
+	if tm.JitterMs < 1 { jitterScore = 10 }
+	// Some delay variance is good
+	delayScore := 100.0
+	if tm.MeanDelayMs < 1 { delayScore = 40 }
+	if tm.MaxDelayMs-tm.MinDelayMs < 10 { delayScore = 50 }
+	// Burst gap should exist
+	gapScore := 100.0
+	if tm.BurstGapMs < 10 { gapScore = 40 }
+	return (jitterScore*40 + delayScore*30 + gapScore*30) / 100
+}
+
+func scoreBurstPattern(p *morph.Profile) float64 {
+	tm := p.Timing
+	// Burst size between 2-30 is realistic
+	if tm.BurstSize < 2 { return 40 }
+	if tm.BurstSize > 50 { return 50 }
+	// Gap/burst ratio
+	ratio := float64(tm.BurstGapMs) / math.Max(float64(tm.BurstSize), 1)
+	if ratio < 1 { return 50 }
+	if ratio > 500 { return 70 }
+	return 90
+}
+
+func generateRecommendations(p *morph.Profile, sizeScore, timingScore, burstScore float64) []string {
+	var recs []string
+	buckets := p.PacketSizes.Buckets
+
+	if len(buckets) < 5 {
+		recs = append(recs, "Add more size buckets (5+ recommended) for a more realistic distribution")
+	}
+
+	maxW := 0.0
+	for _, b := range buckets {
+		if b.Weight > maxW { maxW = b.Weight }
+	}
+	if maxW > 60 {
+		recs = append(recs, fmt.Sprintf("Dominant bucket has %.0f%% weight \u2014 spread traffic more evenly to avoid statistical fingerprinting", maxW))
+	}
+
+	hasSmall := false
+	for _, b := range buckets {
+		if b.Min < 100 && b.Weight > 3 { hasSmall = true }
+	}
+	if !hasSmall {
+		recs = append(recs, "Add small packets (40-100 bytes, 5-15%%) to mimic TCP ACKs and control frames")
+	}
+
+	tm := p.Timing
+	if tm.JitterMs < 5 {
+		recs = append(recs, "Increase jitter (10+ ms) \u2014 low jitter looks like machine-generated traffic")
+	}
+	if tm.MeanDelayMs < 1 {
+		recs = append(recs, "Add some inter-packet delay (5+ ms mean) \u2014 zero delay is a VPN fingerprint")
+	}
+	if tm.BurstGapMs < 10 {
+		recs = append(recs, "Increase burst gap (50+ ms) \u2014 continuous streams without pauses are suspicious")
+	}
+	if tm.BurstSize > 40 {
+		recs = append(recs, fmt.Sprintf("Burst size %d is very high \u2014 consider reducing to 15-25 for more natural patterns", tm.BurstSize))
+	}
+
+	return recs
+}
+
 
 // ── List profiles ───────────────────────────────────────────────
 

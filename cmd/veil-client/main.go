@@ -43,7 +43,7 @@ func main() {
 	configFile := flag.String("config", "", "Path to config file (JSON)")
 	serverAddr := flag.String("server", "", "Veil server address")
 	secret := flag.String("secret", "", "Pre-shared secret")
-	transportType := flag.String("transport", "raw", "Transport: raw, tls, wss")
+	transportType := flag.String("transport", "raw", "Transport: raw, tls, wss, quic")
 	socksAddr := flag.String("socks", "127.0.0.1:1080", "Local SOCKS5 address")
 	sni := flag.String("sni", "", "TLS SNI override")
 	cipher := flag.String("cipher", "chacha20-poly1305", "Cipher")
