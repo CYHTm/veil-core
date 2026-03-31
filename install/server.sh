@@ -61,7 +61,8 @@ echo -e "${GREEN}✓${NC} Код загружен"
 # Build
 go build -o /usr/local/bin/veil-server ./cmd/veil-server/
 go build -o /usr/local/bin/veil-client ./cmd/veil-client/
-chmod +x /usr/local/bin/veil-server /usr/local/bin/veil-client
+go build -o /usr/local/bin/veil-analyze ./cmd/veil-analyze/
+chmod +x /usr/local/bin/veil-server /usr/local/bin/veil-client /usr/local/bin/veil-analyze
 
 echo -e "${GREEN}✓${NC} Бинарники собраны"
 
@@ -123,9 +124,11 @@ echo -e "${GREEN}✓${NC} Сервис запущен"
 # Firewall
 if command -v ufw &> /dev/null; then
   ufw allow $PORT/tcp > /dev/null 2>&1
+  ufw allow $PORT/udp > /dev/null 2>&1  # QUIC/HTTP3
   echo -e "${GREEN}✓${NC} Фаервол настроен (ufw)"
 elif command -v firewall-cmd &> /dev/null; then
   firewall-cmd --permanent --add-port=$PORT/tcp > /dev/null 2>&1
+  firewall-cmd --permanent --add-port=$PORT/udp > /dev/null 2>&1  # QUIC/HTTP3
   firewall-cmd --reload > /dev/null 2>&1
   echo -e "${GREEN}✓${NC} Фаервол настроен (firewalld)"
 fi

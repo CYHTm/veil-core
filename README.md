@@ -300,6 +300,29 @@ veil-core/
 
 <br>
 
+## 🚀 QUIC/HTTP3 Transport
+
+Veil supports QUIC (HTTP/3) transport — the same protocol used by Chrome, YouTube, and Google services:
+
+- **UDP-based** — harder for DPI to track than TCP
+- **Native TLS 1.3** — encrypted from the first packet
+- **Connection migration** — survives IP/network changes
+- **Multiplexed** — no head-of-line blocking
+
+```bash
+# Server with QUIC:
+veil-server -secret "..." -listen ":443" -transport quic -cert cert.pem -key key.pem
+
+# Client with QUIC:
+veil-client -server IP:443 -secret "..." -transport quic
+
+# Note: QUIC uses UDP — ensure port is open for both TCP and UDP
+```
+
+Available transports: **raw** (TCP), **tls** (TLS 1.3 + uTLS), **wss** (WebSocket), **quic** (QUIC/HTTP3)
+
+<br>
+
 ## 🎭 Traffic Morphing Profiles
 
 Veil includes **8 built-in profiles** that make your traffic look like real applications:
@@ -533,6 +556,27 @@ veil://СЕКРЕТ@ХОСТ:ПОРТ?transport=decoy&morph=http2_browsing
 | `morph` | `http2_browsing`, `video_streaming` | `http2_browsing` |
 | `cipher` | `chacha20-poly1305`, `aes-256-gcm` | `chacha20-poly1305` |
 | `sni` | Любой домен | Имя хоста сервера |
+
+<br>
+
+## 🚀 QUIC/HTTP3 транспорт
+
+Veil поддерживает QUIC (HTTP/3) — тот же протокол, что используют Chrome и YouTube:
+
+- **UDP** — сложнее отследить DPI
+- **TLS 1.3** с первого пакета
+- **Миграция** — переживает смену IP/сети
+- **Мультиплексинг** без head-of-line blocking
+
+```bash
+# Сервер с QUIC:
+veil-server -secret "..." -listen ":443" -transport quic -cert cert.pem -key key.pem
+
+# Клиент с QUIC:
+veil-client -server IP:443 -secret "..." -transport quic
+```
+
+Доступные транспорты: **raw** (TCP), **tls** (TLS 1.3 + uTLS), **wss** (WebSocket), **quic** (QUIC/HTTP3)
 
 <br>
 

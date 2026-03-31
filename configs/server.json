@@ -3,5 +3,15 @@
   "secret": "CHANGE-ME-to-a-long-random-passphrase",
   "transport": "raw",
   "cipher": "chacha20-poly1305",
-  "max_streams": 256
+  "max_streams": 256,
+  "morph_profiles": [
+    "http2_browsing",
+    "video_streaming",
+    "chrome_real",
+    "youtube_real",
+    "tiktok_scrolling",
+    "discord_chat",
+    "telegram_messaging",
+    "grpc_api"
+  ]
 }
