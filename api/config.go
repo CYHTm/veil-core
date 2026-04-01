@@ -49,6 +49,9 @@ type ClientConfig struct {
 	ConnectTimeout time.Duration `json:"connect_timeout,omitempty"` // Default: 15s
 	KeepaliveInterval time.Duration `json:"keepalive_interval,omitempty"` // Default: 30s
 
+	// DNS leak protection
+	DNSListenAddr string `json:"dns_listen,omitempty"` // Local DNS proxy (e.g., "127.0.0.1:5353")
+
 	// Callbacks (optional)
 	OnConnect    func()       `json:"-"`
 	OnDisconnect func(error)  `json:"-"`

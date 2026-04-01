@@ -49,6 +49,7 @@ func main() {
 	cipher := flag.String("cipher", "chacha20-poly1305", "Cipher")
 	morphProfile := flag.String("morph", "http2_browsing", "Morph profile")
 	insecure := flag.Bool("insecure", false, "Skip TLS verify (testing)")
+	dnsAddr := flag.String("dns", "", "Local DNS proxy address (e.g., 127.0.0.1:5353) — prevents DNS leaks")
 
 	listProfiles := flag.Bool("list-profiles", false, "List available morph profiles")
 	flag.Parse()
@@ -112,6 +113,7 @@ func main() {
 		Cipher:             *cipher,
 		MorphProfile:       *morphProfile,
 		InsecureSkipVerify: *insecure,
+		DNSListenAddr:     *dnsAddr,
 		OnConnect: func() {
 			log.Println("✅ Connected to Veil server")
 		},
@@ -143,6 +145,9 @@ func main() {
 	fmt.Printf("  ║  Cipher:    %-32s ║\n", *cipher)
 	fmt.Printf("  ║  Morph:     %-32s ║\n", *morphProfile)
 	fmt.Printf("  ║  SOCKS5:    %-32s ║\n", *socksAddr)
+	if *dnsAddr != "" {
+		fmt.Printf("  ║  DNS Proxy: %-32s ║\n", *dnsAddr)
+	}
 	fmt.Println("  ╠══════════════════════════════════════════════╣")
 	fmt.Println("  ║  Status: ✅  CONNECTED                       ║")
 	fmt.Println("  ║                                              ║")
@@ -154,6 +159,18 @@ func main() {
 	fmt.Println()
 
 	go startSOCKS5Proxy(*socksAddr, client)
+
+	if *dnsAddr != "" {
+		dnsOpener := func(target string) (io.ReadWriteCloser, error) {
+			return client.OpenStream(target)
+		}
+		dnsProxy := api.NewDNSProxy(*dnsAddr, "", dnsOpener, nil)
+		if err := dnsProxy.Start(); err != nil {
+			log.Fatalf("❌ DNS proxy failed: %v", err)
+		}
+		defer dnsProxy.Close()
+		log.Printf("🛡  DNS leak protection active on %s", *dnsAddr)
+	}
 
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)

@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	veilcrypto "github.com/veil-protocol/veil-core/crypto"
 	"github.com/veil-protocol/veil-core/morph"
@@ -34,6 +35,7 @@ type Server struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+	dialer *net.Dialer
 }
 
 func NewServer(config ServerConfig) (*Server, error) {
@@ -60,6 +62,19 @@ func NewServer(config ServerConfig) (*Server, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Build dialer with optional custom DNS resolver
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	if config.DNSServer != "" {
+		dialer.Resolver = &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				// Route all DNS lookups to the configured DNS server
+				d := net.Dialer{Timeout: 5 * time.Second}
+				return d.DialContext(ctx, "udp", config.DNSServer)
+			},
+		}
+	}
+
 	s := &Server{
 		config:   config,
 		events:   NewEventBus(256),
@@ -68,6 +83,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 		sessions: make(map[[16]byte]*protocol.Session),
 		ctx:      ctx,
 		cancel:   cancel,
+		dialer:   dialer,
 	}
 
 	s.registry.Register(raw.New())
@@ -279,7 +295,7 @@ func (s *Server) proxyStream(session *protocol.Session, streamID uint16, targetA
 		return
 	}
 
-	targetConn, err := net.DialTimeout("tcp", targetAddr, protocol.HandshakeTimeout)
+	targetConn, err := s.dialer.DialContext(s.ctx, "tcp", targetAddr)
 	if err != nil {
 		s.logger.Printf("proxy connect to %s failed: %v", targetAddr, err)
 		stream.Close()

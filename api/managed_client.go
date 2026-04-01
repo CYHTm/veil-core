@@ -11,6 +11,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -32,6 +33,7 @@ type ManagedClient struct {
 
 	connected   int32
 	socksLn     net.Listener
+	dnsProxy    *DNSProxy
 	ctx         context.Context
 	cancel      context.CancelFunc
 
@@ -94,6 +96,13 @@ func NewManagedClient(cfg ManagedClientConfig) (*ManagedClient, error) {
 
 	// Setup graceful shutdown
 	mc.shutdown = NewGracefulShutdown(10 * time.Second)
+	mc.shutdown.Register("dns", 0, func(ctx context.Context) error {
+		if mc.dnsProxy != nil {
+			mc.dnsProxy.Close()
+		}
+		return nil
+	})
+
 	mc.shutdown.Register("socks", 1, func(ctx context.Context) error {
 		mc.mu.Lock()
 		if mc.socksLn != nil {
@@ -256,6 +265,26 @@ func (mc *ManagedClient) Stats() (bytes int64, conns int64, reconnects int) {
 	return atomic.LoadInt64(&mc.totalBytes),
 		atomic.LoadInt64(&mc.activeConns),
 		mc.reconnector.Attempt()
+}
+
+// StartDNS starts the local DNS proxy that tunnels queries through Veil.
+// This prevents DNS leaks by ensuring all DNS resolution goes through the tunnel.
+func (mc *ManagedClient) StartDNS(listenAddr, dnsTarget string) error {
+	opener := func(target string) (io.ReadWriteCloser, error) {
+		return mc.OpenStream(target)
+	}
+
+	d := NewDNSProxy(listenAddr, dnsTarget, opener, mc.logger)
+	if err := d.Start(); err != nil {
+		return fmt.Errorf("dns proxy: %w", err)
+	}
+	mc.dnsProxy = d
+	return nil
+}
+
+// DNSProxy returns the DNS proxy instance (nil if not started).
+func (mc *ManagedClient) DNSProxy() *DNSProxy {
+	return mc.dnsProxy
 }
 
 // StartSOCKS5 starts the SOCKS5 proxy and ties it to this client.
