@@ -35,6 +35,7 @@ type Session struct {
 	mux         *mux.Mux
 	morphEngine *morph.Engine
 	timing      *morph.TimingEngine
+	idlePadder  *morph.IdlePadder
 
 	keepaliveInterval time.Duration
 	keepaliveCancel   context.CancelFunc
@@ -106,6 +107,7 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 	if cfg.MorphProfile != nil {
 		s.morphEngine = morph.NewEngine(cfg.MorphProfile)
 		s.timing = morph.NewTimingEngine(&cfg.MorphProfile.Timing)
+		s.idlePadder = morph.NewIdlePadder(cfg.MorphProfile)
 	}
 
 	maxStreams := hr.PeerCapabilities.MaxStreams
@@ -371,6 +373,13 @@ func (s *Session) readLoop(ctx context.Context) {
 }
 
 func (s *Session) keepaliveLoop(ctx context.Context) {
+	// If we have an idle padder, use morphed keepalives with variable timing.
+	// Otherwise fall back to fixed-interval keepalives.
+	if s.idlePadder != nil {
+		s.morphedKeepaliveLoop(ctx)
+		return
+	}
+
 	ticker := time.NewTicker(s.keepaliveInterval)
 	defer ticker.Stop()
 
@@ -383,6 +392,35 @@ func (s *Session) keepaliveLoop(ctx context.Context) {
 				if err := s.sendFrame(NewKeepaliveFrame()); err != nil {
 					s.logger.Printf("[session:%x] keepalive error: %v", s.id[:4], err)
 				}
+			}
+		}
+	}
+}
+
+// morphedKeepaliveLoop sends keepalive frames with variable timing and
+// morph-padding to mimic real application idle behavior (e.g., Chrome
+// HTTP/2 PINGs, WebSocket heartbeats).
+func (s *Session) morphedKeepaliveLoop(ctx context.Context) {
+	for {
+		action := s.idlePadder.NextAction()
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(action.Delay):
+			if !s.state.IsEstablished() {
+				continue
+			}
+
+			frame := NewKeepaliveFrame()
+			// Add morph padding to make keepalive look like real app traffic
+			if action.PaddingSize > 0 && s.morphEngine != nil {
+				frame.MorphPad = s.morphEngine.GeneratePadding(action.PaddingSize)
+				frame.Flags |= FlagMorphPadded
+			}
+
+			if err := s.sendFrame(frame); err != nil {
+				s.logger.Printf("[session:%x] idle keepalive error: %v", s.id[:4], err)
 			}
 		}
 	}
